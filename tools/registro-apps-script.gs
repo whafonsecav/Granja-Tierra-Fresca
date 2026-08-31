@@ -62,6 +62,15 @@
 var GITHUB_TOKEN = PropertiesService.getScriptProperties()
                                     .getProperty('GITHUB_TOKEN');
 
+// Escribir tambien en registros.json del repositorio.
+//
+// APAGADO A PROPOSITO. El repositorio es publico: cualquiera en internet
+// puede leer ese archivo, y un celular es un dato personal de un tercero.
+// Los numeros quedan solo en esta hoja, que es privada de su cuenta.
+//
+// Encenderlo solo tendria sentido con el repositorio en privado.
+var ESCRIBIR_EN_GITHUB = false;
+
 var REPO_DUENO  = 'whafonsecav';
 var REPO_NOMBRE = 'Granja-Tierra-Fresca';
 var REPO_RAMA   = 'main';
@@ -111,12 +120,16 @@ function doPost(e) {
     resultado.error = 'Hoja: ' + error;
   }
 
-  // Paso 2: el repositorio. Si falla, el número ya quedó en la hoja.
-  try {
-    guardarEnGitHub(fecha, numero);
-    resultado.github = true;
-  } catch (error) {
-    resultado.errorGitHub = String(error);
+  // Paso 2: el repositorio, solo si esta encendido. Ver ESCRIBIR_EN_GITHUB.
+  if (ESCRIBIR_EN_GITHUB) {
+    try {
+      guardarEnGitHub(fecha, numero);
+      resultado.github = true;
+    } catch (error) {
+      resultado.errorGitHub = String(error);
+    }
+  } else {
+    resultado.github = 'desactivado';
   }
 
   return responder(resultado);
@@ -287,6 +300,7 @@ function probar() {
   var r = JSON.parse(texto);
   if (r.hoja)   { Logger.log('HOJA: escrita. Revise la fila nueva.'); }
   else          { Logger.log('HOJA: FALLO -> ' + r.error); }
-  if (r.github) { Logger.log('GITHUB: escrito en registros.json.'); }
-  else          { Logger.log('GITHUB: FALLO -> ' + r.errorGitHub); }
+  if (r.github === 'desactivado') { Logger.log('GITHUB: desactivado a proposito. Los numeros van solo a la hoja.'); }
+  else if (r.github)              { Logger.log('GITHUB: escrito en registros.json.'); }
+  else                            { Logger.log('GITHUB: FALLO -> ' + r.errorGitHub); }
 }

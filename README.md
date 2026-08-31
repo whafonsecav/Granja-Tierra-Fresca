@@ -130,8 +130,6 @@ email/INSTRUCCIONES-ENVIO.md        cómo enviarlo y por qué así
 tools/generar_pdf.py                regenera el PDF (1 párrafo, 10 líneas)
 tools/generar_fondo.py              regenera el fondo
 tools/registro-apps-script.gs       intermediario que guarda los números
-registros.json                      los números registrados (lo escribe el
-                                    intermediario, no se edita a mano)
 ```
 
 Para regenerar los archivos derivados:
@@ -230,16 +228,26 @@ oído; agrupados se retienen como un número. Un grupo final de un solo dígito 
 absorbe en el anterior, porque *«cuatro, cuatro, tres... tres»* suena a error de
 la máquina.
 
-### Dónde queda el número
+### Dónde queda el número, y por qué ya no en GitHub
 
 Siempre en `localStorage`, en el navegador del usuario: es la copia que no
-depende de la red ni de que el intermediario esté bien configurado.
+depende de la red. Y, con `ENDPOINT_REGISTRO` configurado, en la hoja de
+cálculo privada.
 
-Y, si `ENDPOINT_REGISTRO` está configurado, también en la hoja de cálculo y en
-`registros.json`. Ese envío va en modo `no-cors`, porque una aplicación web de
-Apps Script no devuelve cabeceras CORS: la petición sale, pero el navegador no
-deja leer la respuesta. Por eso no se puede confirmar la entrega desde la
-página, y por eso la copia local no es opcional.
+**En el repositorio ya no.** La primera versión escribía cada número en
+`registros.json`, y funcionaba. El problema es que este repositorio es público:
+ese archivo lo podía leer cualquiera en internet, y un número de celular es un
+dato personal de un tercero. La conveniencia de tenerlo versionado no compensa
+publicar el teléfono de alguien.
+
+La escritura sigue programada en el intermediario, apagada tras la constante
+`ESCRIBIR_EN_GITHUB`. Encenderla solo tendría sentido con el repositorio en
+privado.
+
+El envío a la hoja va en modo `no-cors`, porque una aplicación web de Apps
+Script no devuelve cabeceras CORS: la petición sale, pero el navegador no deja
+leer la respuesta. Por eso no se puede confirmar la entrega desde la página, y
+por eso la copia local no es opcional.
 
 ### Voz sintética y micrófono nunca funcionan al mismo tiempo
 
@@ -264,36 +272,48 @@ Para instalar voces en español en Windows:
 **Configuración → Hora e idioma → Voz → Administrar voces → Agregar voces →
 Español**.
 
-### El arranque recortado de la voz: tres problemas, tres capas
+### En celular la voz no puede hablar antes del primer toque
 
-La voz se comía el principio de cada frase. No era un problema, eran tres a la
-vez, y cada uno se arregla distinto. Por eso `hablar()` es más enrevesado de lo
-que parecería necesario:
+iOS y Android prohíben que una página emita sonido — audio *y* voz sintética —
+mientras no haya recibido un gesto del usuario. No hay forma de saltárselo.
 
-1. **El dispositivo de salida se duerme** cuando lleva un rato en silencio, y al
-   despertar se come los primeros 200 a 400 milisegundos. Se le manda un
-   silencio real por WebAudio antes de hablar. El buffer no es silencio absoluto
-   sino una amplitud mínima e inaudible, porque algunos controladores detectan
-   el silencio puro y apagan el canal igual, que es justo lo que se quiere
-   evitar.
+Eso obliga a un reparto claro:
 
-2. **El motor de voz abre su propio canal de audio**, distinto del de WebAudio,
-   y ese también arranca frío. Por eso se dice primero una frase de
-   calentamiento que solo tiene comas: abre el canal y no pronuncia nada. El
-   recorte se lo lleva ella.
+- **Antes del toque**, el único canal es el lector de pantalla del usuario. La
+  superficie de arranque recibe el foco y su `aria-label` dice qué hacer y qué
+  va a pasar: *«Toque la pantalla para escuchar la experiencia de la Granja
+  Tierra Fresca. Al finalizar le haremos unas preguntas muy breves.»*
+- **En el instante del toque**, en móvil, la voz dice lo que no pudo decir
+  antes y entra la experiencia. En computador no se repite, porque allí sí se
+  escuchó al cargar.
 
-3. **Aun así puede quedar un recorte de milisegundos.** Por eso la frase real
-   también empieza con comas: si algo se pierde, se pierde una pausa y no la
-   primera sílaba de la primera palabra.
+Hay una trampa más de iOS: la **primera** llamada a `speak()` tiene que ocurrir
+de forma síncrona dentro del manejador del gesto. Si pasa por un `setTimeout`
+—como hace `hablar()` para dejar su silencio inicial— el navegador la descarta
+y el motor de voz queda mudo el resto de la sesión. Por eso, en el toque se
+dispara primero una frase a volumen cero, sin temporizador de por medio, cuyo
+único trabajo es desbloquear el motor.
 
-Se usan comas y no puntos suspensivos a propósito: todos los motores leen la
-coma como pausa y ninguno la pronuncia; los puntos suspensivos algunos sí los
-verbalizan.
+### El arranque recortado, y una solución que salió peor que el problema
 
-Hay una cuarta pieza, para otro problema: Chrome deja de hablar a los quince
+Los motores de voz se comen el principio de la primera frase después de un
+silencio, por dos razones que se arreglan distinto: el dispositivo de salida se
+duerme, y el motor de voz abre su propio canal aparte. Contra lo primero se le
+manda un silencio real por WebAudio, con amplitud mínima inaudible en vez de
+cero, porque algunos controladores detectan el silencio puro y apagan el canal
+igual. Contra lo segundo se dice antes una frase de calentamiento a **volumen
+cero**, que abre el canal del motor sin que se oiga nada.
+
+El calentamiento estuvo hecho de comas, para que sonaran como pausa. **Fue un
+error, y en celular quedó en evidencia: el motor de voz las verbalizó y la
+página decía «coma, coma, coma» antes de cada frase.** Nunca se debe usar
+puntuación como si fuera silencio: varios motores móviles pronuncian los
+signos. Ahora el calentamiento va a volumen cero, que no puede sonar pase lo
+que pase, y a la frase real no se le antepone nada.
+
+Queda una cuarta pieza, para otro problema: Chrome deja de hablar a los quince
 segundos si nadie lo empuja. Un `pause()`/`resume()` periódico mantiene viva la
-locución. En móvil no se aplica, porque allí `pause()` está roto y produce
-cortes propios.
+locución. En móvil no se aplica, porque allí `pause()` está roto.
 
 El silencio inicial se ajusta con `SILENCIO_INICIAL_MS`.
 

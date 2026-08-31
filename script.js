@@ -255,10 +255,13 @@
   //      real tambien empieza con comas: si algo se pierde, se pierde una
   //      pausa y no la primera silaba de la primera palabra.
   //
-  // Las comas se usan a proposito en vez de puntos suspensivos: todos los
-  // motores las leen como pausa, y ninguno las pronuncia. Los puntos
-  // suspensivos algunos si los verbalizan.
-  var PAUSA_INICIAL = ", , ";
+  // NO se usa puntuacion como pausa. Es tentador anteponer comas al texto
+  // para que el recorte se coma una pausa en vez de una silaba, pero varios
+  // motores de voz de celular VERBALIZAN los signos: la pagina termina
+  // diciendo "coma, coma, coma" antes de cada frase. Es peor el remedio.
+  //
+  // El calentamiento se hace con volumen cero, que no puede sonar pase lo
+  // que pase, y el despertar del dispositivo lo sigue haciendo WebAudio.
 
   var latido = null;
 
@@ -276,6 +279,27 @@
 
   function detenerLatido() {
     if (latido) { window.clearInterval(latido); latido = null; }
+  }
+
+  var vozDesbloqueada = false;
+
+  // iOS y varios Android exigen que la PRIMERA llamada a speak() ocurra dentro
+  // del manejador del gesto del usuario, de forma sincrona. Si pasa por un
+  // setTimeout, como hace hablar(), el navegador la descarta y el motor de voz
+  // queda mudo el resto de la sesion.
+  //
+  // Por eso, en el instante del primer toque, se dispara una frase a volumen
+  // cero sin pasar por ningun temporizador. Solo sirve para desbloquear.
+  function desbloquearVoz() {
+    if (vozDesbloqueada || !TTS ||
+        typeof window.SpeechSynthesisUtterance !== "function") { return; }
+    vozDesbloqueada = true;
+    try {
+      var llave = new window.SpeechSynthesisUtterance(".");
+      llave.volume = 0;
+      llave.lang = "es-CO";
+      TTS.speak(llave);
+    } catch (e) { /* sin efecto */ }
   }
 
   function nuevaFrase(texto, voz) {
@@ -323,10 +347,12 @@
     });
   }
 
-  // Capa 2: frase de calentamiento. Solo comas, a volumen casi nulo.
+  // Capa 2: frase de calentamiento a volumen cero. Abre el canal del motor de
+  // voz sin que se oiga nada, ni siquiera si el motor decidiera verbalizar el
+  // punto: con volume 0 no hay sonido posible.
   function calentarYDecir(texto, voz, seguir) {
-    var calienta = nuevaFrase(", , , ,", voz);
-    calienta.volume = 0.01;
+    var calienta = nuevaFrase(".", voz);
+    calienta.volume = 0;
 
     var arrancado = false;
     function decirDeVerdad() {
@@ -344,9 +370,9 @@
     try { TTS.speak(calienta); } catch (e) { decirDeVerdad(); }
   }
 
-  // Capa 3: la frase real, con sus propias comas por delante.
+  // Capa 3: la frase real, tal cual, sin nada antepuesto.
   function decirEnVozAlta(texto, voz, seguir) {
-    var frase = nuevaFrase(PAUSA_INICIAL + texto, voz);
+    var frase = nuevaFrase(texto, voz);
 
     var listo = false;
     function finalizar() {
@@ -647,9 +673,9 @@
      ===================================================================== */
 
   function textoDeArranque() {
-    return esMovil()
-      ? "Toque la pantalla para escuchar la experiencia de la Granja Tierra Fresca."
-      : "Oprima cualquier tecla para escuchar la experiencia de la Granja Tierra Fresca.";
+    var gesto = esMovil() ? "Toque la pantalla" : "Oprima cualquier tecla";
+    return gesto + " para escuchar la experiencia de la Granja Tierra Fresca. " +
+           "Al finalizar le haremos unas preguntas muy breves.";
   }
 
   function prepararArranque() {
@@ -674,12 +700,27 @@
   function comenzar() {
     if (yaArranco) { return; }
     yaArranco = true;
-    if (TTS) { TTS.cancel(); }
+    if (TTS) {
+      TTS.cancel();
+      desbloquearVoz();   // sincrono, dentro del gesto: lo exige iOS
+    }
 
     despertarSalida();
 
     arranque.setAttribute("aria-label", "Reproduciendo.");
     arranque.blur();
+
+    // En iOS y Android ninguna pagina puede hablar antes del primer toque: la
+    // instruccion de arranque solo la oye quien tenga lector de pantalla. Este
+    // es el primer instante en que la voz puede sonar, asi que se le dice aqui
+    // lo que no se le pudo decir antes. En computador ya lo escucho y seria
+    // repetirselo, asi que alli se entra directo.
+    if (esMovil()) {
+      hablar("Gracias. Empieza la experiencia. Al finalizar le haré unas " +
+             "preguntas muy breves.", reproducir);
+      return;
+    }
+
     reproducir();
   }
 
