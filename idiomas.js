@@ -54,7 +54,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
     etiquetaArranque: "Empezar a escuchar el mensaje de la Granja Tierra Fresca.",
     bienvenida: "Tenemos un mensaje especial para ti. {aviso} Por favor, {gesto} para escuchar este mensaje que tenemos para ti.",
     puente: "Tenemos un mensaje especial para ti. {aviso} Aquí va.",
-    arranca: "Aquí va.",
+    arranca: "A continuación te reproduzco el mensaje que preparamos especialmente para ti.",
     tocaOtraVez: "{gesto} otra vez, por favor.",
 
     soloTeclado: "No puedo usar el micrófono, así que vamos por el teclado. " +
@@ -66,21 +66,21 @@ window.TIERRA_FRESCA_IDIOMAS = {
                 "formas quisiera saber si quieres contactar a Tierra Fresca.",
 
     preguntaRepetir: "¿Quieres escuchar el mensaje otra vez? Responde sí, o no.",
-    repitiendo: "Con mucho gusto. Aquí va otra vez.",
+    repitiendo: "Aquí va otra vez.",
     preguntaContacto: "¿Quieres contactar a Tierra Fresca? Responde sí, o no.",
     noEntiendo: "No logro entenderte, y la culpa es mía, no tuya. Si estás en " +
                 "un computador, presiona la tecla ese para sí, o la tecla ene " +
                 "para no.",
 
-    pedirNumero: "Qué alegría. Dime tu número de celular completo, de corrido " +
+    pedirNumero: "Dime tu número de celular completo, de corrido " +
                  "y con calma. Yo te lo repito al final para que me confirmes " +
                  "que quedó bien.",
-    numeroBorrado: "Borrado. Dime tu número de celular completo otra vez, por favor.",
+    numeroBorrado: "Ya lo borré. Dime tu número de celular completo otra vez, por favor.",
     numeroFaltaron: "Me faltaron números. Dime tu número de celular completo " +
                     "otra vez, por favor.",
 
     confirmar: "El número que entendí es: {numero}. Si quedó bien, di: correcto. Si quedó mal, di: corregir. Y si quieres oírlo otra vez, di: volver a escuchar.",
-    repetirNumero: "Claro. {numero}. ¿Quedó bien? Di: correcto, corregir, o volver a escuchar.",
+    repetirNumero: "{numero}. ¿Quedó bien? Di: correcto, corregir, o volver a escuchar.",
 
     whatsapp: "Perfecto. Te voy a abrir WhatsApp con el mensaje ya escrito, " +
               "para que solo tengas que pulsar enviar.",
@@ -92,11 +92,11 @@ window.TIERRA_FRESCA_IDIOMAS = {
     preguntaPdf: "Una última cosa. ¿Quieres descargar nuestra propuesta? Es un " +
                  "solo párrafo, de diez líneas, escrito para que tu lector de " +
                  "pantalla te lo lea de corrido. Responde sí, o no.",
-    cierreNumeroYPdf: "Listo. Tu número quedó guardado: uno de nuestros aliados se comunica contigo muy pronto. Gracias por escucharnos hasta el final. Cuando termine de hablar, la propuesta se descargará sola en tu equipo. Hasta pronto.",
-    cierreNumeroSinPdf: "Listo. Tu número quedó guardado y uno de nuestros aliados se comunica contigo muy pronto. Gracias por escucharnos hasta el final. Hasta pronto.",
-    cierrePdfSinNumero: "Listo. Gracias por regalarnos tu tiempo. Cuando termine de hablar, la propuesta se descargará sola en tu equipo, para cuando quieras oírla con calma. Hasta pronto.",
-    cierreSinNada: "Con mucho gusto. Gracias por regalarnos tu tiempo y tu atención. Aquí quedamos, por si algún día quieres volver. Hasta pronto.",
-    numeroGuardado: "Listo, ya lo tengo.",
+    cierreNumeroYPdf: "Tu número quedó guardado: uno de nuestros aliados se comunica contigo muy pronto. Gracias por escucharnos hasta el final. Cuando termine de hablar, la propuesta se descargará sola en tu equipo. Hasta pronto.",
+    cierreNumeroSinPdf: "Tu número quedó guardado y uno de nuestros aliados se comunica contigo muy pronto. Gracias por escucharnos hasta el final. Hasta pronto.",
+    cierrePdfSinNumero: "Gracias por regalarnos tu tiempo. Cuando termine de hablar, la propuesta se descargará sola en tu equipo, para cuando quieras oírla con calma. Hasta pronto.",
+    cierreSinNada: "Gracias por regalarnos tu tiempo y tu atención. Aquí quedamos, por si algún día quieres volver. Hasta pronto.",
+    numeroGuardado: "Ya lo tengo.",
     cierreConPdf: "Listo, ya lo tienes en tu carpeta de descargas. Que ese guiso " +
                   "te quede como en casa. Hasta pronto.",
     cierreSinPdf: "Perfecto, te lo dejo así. Que ese guiso te quede como en casa. " +
@@ -119,7 +119,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
     etiquetaArranque: "Start listening to the message from Granja Tierra Fresca.",
     bienvenida: "We have a special message for you. {aviso} Please, {gesto} to hear this message we have for you.",
     puente: "We have a special message for you. {aviso} Here it goes.",
-    arranca: "Here it goes.",
+    arranca: "Here comes the message we prepared especially for you.",
     tocaOtraVez: "{gesto} again, please.",
 
     soloTeclado: "I can't use the microphone, so let's go with the keyboard. " +
@@ -130,20 +130,20 @@ window.TIERRA_FRESCA_IDIOMAS = {
                 "know whether you want to contact Tierra Fresca.",
 
     preguntaRepetir: "Would you like to hear the message again? Answer yes, or no.",
-    repitiendo: "Gladly. Here it goes again.",
+    repitiendo: "Here it goes again.",
     preguntaContacto: "Would you like to contact Tierra Fresca? Answer yes, or no.",
     noEntiendo: "I can't quite understand you, and that's on me, not on you. " +
                 "If you're on a computer, press the S key for yes, or the N " +
                 "key for no.",
 
-    pedirNumero: "Wonderful. Tell me your full phone number, straight through " +
+    pedirNumero: "Tell me your full phone number, straight through " +
                  "and calmly. I'll read it back at the end so you can confirm it.",
-    numeroBorrado: "Deleted. Tell me your full phone number again, please.",
+    numeroBorrado: "I deleted it. Tell me your full phone number again, please.",
     numeroFaltaron: "I'm missing some digits. Tell me your full phone number " +
                     "again, please.",
 
     confirmar: "The number I got is: {numero}. If it is right, say: correct. If it is wrong, say: fix it. And if you want to hear it again, say: repeat.",
-    repetirNumero: "Sure. {numero}. Is it right? Say: correct, fix it, or repeat.",
+    repetirNumero: "{numero}. Is it right? Say: correct, fix it, or repeat.",
 
     whatsapp: "Perfect. I'll open WhatsApp with the message already written, so " +
               "all you have to do is press send.",
@@ -155,10 +155,10 @@ window.TIERRA_FRESCA_IDIOMAS = {
     preguntaPdf: "One last thing. Would you like to download our proposal? " +
                  "It's a single paragraph, ten lines, written so your screen " +
                  "reader can read it straight through. Answer yes, or no.",
-    cierreNumeroYPdf: "Done. Your number is saved: one of our partners will be in touch very soon. Thank you for listening all the way through. When I finish speaking, the proposal will download on its own. See you soon.",
-    cierreNumeroSinPdf: "Done. Your number is saved and one of our partners will be in touch very soon. Thank you for listening all the way through. See you soon.",
-    cierrePdfSinNumero: "Done. Thank you for giving us your time. When I finish speaking, the proposal will download on its own, for whenever you want to hear it calmly. See you soon.",
-    cierreSinNada: "Gladly. Thank you for giving us your time and your attention. We are here, in case you ever want to come back. See you soon.",
+    cierreNumeroYPdf: "Your number is saved: one of our partners will be in touch very soon. Thank you for listening all the way through. When I finish speaking, the proposal will download on its own. See you soon.",
+    cierreNumeroSinPdf: "Your number is saved and one of our partners will be in touch very soon. Thank you for listening all the way through. See you soon.",
+    cierrePdfSinNumero: "Thank you for giving us your time. When I finish speaking, the proposal will download on its own, for whenever you want to hear it calmly. See you soon.",
+    cierreSinNada: "Thank you for giving us your time and your attention. We are here, in case you ever want to come back. See you soon.",
     numeroGuardado: "Got it.",
     cierreConPdf: "Done, it's in your downloads folder. May that stew taste " +
                   "like home. See you soon.",
@@ -181,7 +181,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
     etiquetaArranque: "Começar a ouvir a mensagem da Granja Tierra Fresca.",
     bienvenida: "Temos uma mensagem especial para você. {aviso} Por favor, {gesto} para ouvir esta mensagem que temos para você.",
     puente: "Temos uma mensagem especial para você. {aviso} Lá vai.",
-    arranca: "Lá vai.",
+    arranca: "A seguir vou reproduzir a mensagem que preparamos especialmente para você.",
     tocaOtraVez: "{gesto} de novo, por favor.",
 
     soloTeclado: "Não consigo usar o microfone, então vamos pelo teclado. " +
@@ -193,21 +193,21 @@ window.TIERRA_FRESCA_IDIOMAS = {
                 "Fresca.",
 
     preguntaRepetir: "Quer ouvir a mensagem de novo? Responda sim, ou não.",
-    repitiendo: "Com muito prazer. Lá vai de novo.",
+    repitiendo: "Lá vai de novo.",
     preguntaContacto: "Quer entrar em contato com a Tierra Fresca? Responda sim, ou não.",
     noEntiendo: "Não estou conseguindo te entender, e a culpa é minha, não sua. " +
                 "Se estiver num computador, aperte a tecla S para sim, ou a " +
                 "tecla N para não.",
 
-    pedirNumero: "Que alegria. Me diga seu número de celular completo, de uma " +
+    pedirNumero: "Me diga seu número de celular completo, de uma " +
                  "vez e com calma. Eu repito no final para você confirmar.",
-    numeroBorrado: "Apagado. Me diga seu número de celular completo outra vez, " +
+    numeroBorrado: "Já apaguei. Me diga seu número de celular completo outra vez, " +
                    "por favor.",
     numeroFaltaron: "Faltaram números. Me diga seu número de celular completo " +
                     "outra vez, por favor.",
 
     confirmar: "O número que entendi é: {numero}. Se ficou certo, diga: correto. Se ficou errado, diga: corrigir. E se quiser ouvir de novo, diga: repetir.",
-    repetirNumero: "Claro. {numero}. Ficou certo? Diga: correto, corrigir, ou repetir.",
+    repetirNumero: "{numero}. Ficou certo? Diga: correto, corrigir, ou repetir.",
 
     whatsapp: "Perfeito. Vou abrir o WhatsApp com a mensagem já escrita, para " +
               "você só apertar enviar.",
@@ -219,11 +219,11 @@ window.TIERRA_FRESCA_IDIOMAS = {
     preguntaPdf: "Uma última coisa. Quer baixar a nossa proposta? É um parágrafo " +
                  "só, de dez linhas, escrito para o seu leitor de tela ler de " +
                  "uma vez. Responda sim, ou não.",
-    cierreNumeroYPdf: "Pronto. O seu número ficou guardado: um dos nossos parceiros entra em contato muito em breve. Obrigado por ouvir até o final. Quando eu terminar de falar, a proposta será baixada sozinha. Até logo.",
-    cierreNumeroSinPdf: "Pronto. O seu número ficou guardado e um dos nossos parceiros entra em contato muito em breve. Obrigado por ouvir até o final. Até logo.",
-    cierrePdfSinNumero: "Pronto. Obrigado por nos dar o seu tempo. Quando eu terminar de falar, a proposta será baixada sozinha, para quando quiser ouvir com calma. Até logo.",
-    cierreSinNada: "Com muito prazer. Obrigado por nos dar o seu tempo e a sua atenção. Ficamos por aqui, caso um dia queira voltar. Até logo.",
-    numeroGuardado: "Pronto, já anotei.",
+    cierreNumeroYPdf: "O seu número ficou guardado: um dos nossos parceiros entra em contato muito em breve. Obrigado por ouvir até o final. Quando eu terminar de falar, a proposta será baixada sozinha. Até logo.",
+    cierreNumeroSinPdf: "O seu número ficou guardado e um dos nossos parceiros entra em contato muito em breve. Obrigado por ouvir até o final. Até logo.",
+    cierrePdfSinNumero: "Obrigado por nos dar o seu tempo. Quando eu terminar de falar, a proposta será baixada sozinha, para quando quiser ouvir com calma. Até logo.",
+    cierreSinNada: "Obrigado por nos dar o seu tempo e a sua atenção. Ficamos por aqui, caso um dia queira voltar. Até logo.",
+    numeroGuardado: "Já anotei.",
     cierreConPdf: "Pronto, já está na sua pasta de downloads. Que esse refogado " +
                   "fique com gosto de casa. Até logo.",
     cierreSinPdf: "Perfeito, deixo assim. Que esse refogado fique com gosto de " +
@@ -245,7 +245,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
     etiquetaArranque: "Inizia ad ascoltare il messaggio di Granja Tierra Fresca.",
     bienvenida: "Abbiamo un messaggio speciale per te. {aviso} Per favore, {gesto} per ascoltare questo messaggio che abbiamo per te.",
     puente: "Abbiamo un messaggio speciale per te. {aviso} Eccolo.",
-    arranca: "Eccolo.",
+    arranca: "Adesso ti riproduco il messaggio che abbiamo preparato apposta per te.",
     tocaOtraVez: "{gesto} di nuovo, per favore.",
 
     soloTeclado: "Non riesco a usare il microfono, quindi andiamo con la " +
@@ -256,21 +256,21 @@ window.TIERRA_FRESCA_IDIOMAS = {
                 "comunque sapere se vuoi contattare Tierra Fresca.",
 
     preguntaRepetir: "Vuoi riascoltare il messaggio? Rispondi sì, o no.",
-    repitiendo: "Volentieri. Eccolo di nuovo.",
+    repitiendo: "Eccolo di nuovo.",
     preguntaContacto: "Vuoi contattare Tierra Fresca? Rispondi sì, o no.",
     noEntiendo: "Non riesco a capirti, ed è colpa mia, non tua. Se sei al " +
                 "computer, premi il tasto S per sì, o il tasto N per no.",
 
-    pedirNumero: "Che bello. Dimmi il tuo numero di cellulare per intero, tutto " +
+    pedirNumero: "Dimmi il tuo numero di cellulare per intero, tutto " +
                  "di seguito e con calma. Te lo ripeto alla fine così me lo " +
                  "confermi.",
-    numeroBorrado: "Cancellato. Dimmi di nuovo il tuo numero di cellulare per " +
+    numeroBorrado: "L'ho cancellato. Dimmi di nuovo il tuo numero di cellulare per " +
                    "intero, per favore.",
     numeroFaltaron: "Mi mancano delle cifre. Dimmi di nuovo il tuo numero di " +
                     "cellulare per intero, per favore.",
 
     confirmar: "Il numero che ho capito è: {numero}. Se è giusto, di': corretto. Se è sbagliato, di': correggere. E se vuoi risentirlo, di': ripetere.",
-    repetirNumero: "Certo. {numero}. È giusto? Di': corretto, correggere, o ripetere.",
+    repetirNumero: "{numero}. È giusto? Di': corretto, correggere, o ripetere.",
 
     whatsapp: "Perfetto. Ti apro WhatsApp con il messaggio già scritto, così " +
               "devi solo premere invia.",
@@ -282,11 +282,11 @@ window.TIERRA_FRESCA_IDIOMAS = {
     preguntaPdf: "Un'ultima cosa. Vuoi scaricare la nostra proposta? È un solo " +
                  "paragrafo, di dieci righe, scritto perché il tuo lettore di " +
                  "schermo lo legga tutto di seguito. Rispondi sì, o no.",
-    cierreNumeroYPdf: "Fatto. Il tuo numero è salvato: uno dei nostri partner ti contatta prestissimo. Grazie per averci ascoltato fino in fondo. Quando finisco di parlare, la proposta si scaricherà da sola. A presto.",
-    cierreNumeroSinPdf: "Fatto. Il tuo numero è salvato e uno dei nostri partner ti contatta prestissimo. Grazie per averci ascoltato fino in fondo. A presto.",
-    cierrePdfSinNumero: "Fatto. Grazie per averci dato il tuo tempo. Quando finisco di parlare, la proposta si scaricherà da sola, per quando vorrai ascoltarla con calma. A presto.",
-    cierreSinNada: "Volentieri. Grazie per averci dato il tuo tempo e la tua attenzione. Restiamo qui, se un giorno vorrai tornare. A presto.",
-    numeroGuardado: "Fatto, ce l'ho.",
+    cierreNumeroYPdf: "Il tuo numero è salvato: uno dei nostri partner ti contatta prestissimo. Grazie per averci ascoltato fino in fondo. Quando finisco di parlare, la proposta si scaricherà da sola. A presto.",
+    cierreNumeroSinPdf: "Il tuo numero è salvato e uno dei nostri partner ti contatta prestissimo. Grazie per averci ascoltato fino in fondo. A presto.",
+    cierrePdfSinNumero: "Grazie per averci dato il tuo tempo. Quando finisco di parlare, la proposta si scaricherà da sola, per quando vorrai ascoltarla con calma. A presto.",
+    cierreSinNada: "Grazie per averci dato il tuo tempo e la tua attenzione. Restiamo qui, se un giorno vorrai tornare. A presto.",
+    numeroGuardado: "Ce l'ho.",
     cierreConPdf: "Fatto, ce l'hai nella cartella dei download. Che quel sugo " +
                   "sappia di casa. A presto.",
     cierreSinPdf: "Perfetto, lo lascio così. Che quel sugo sappia di casa. A presto."
@@ -307,7 +307,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
     etiquetaArranque: "Commencer à écouter le message de Granja Tierra Fresca.",
     bienvenida: "Nous avons un message spécial pour toi. {aviso} S'il te plaît, {gesto} pour écouter ce message que nous avons pour toi.",
     puente: "Nous avons un message spécial pour toi. {aviso} Le voici.",
-    arranca: "Le voici.",
+    arranca: "Je te passe maintenant le message que nous avons préparé spécialement pour toi.",
     tocaOtraVez: "{gesto} encore une fois, s'il te plaît.",
 
     soloTeclado: "Je ne peux pas utiliser le micro, alors passons au clavier. " +
@@ -319,22 +319,22 @@ window.TIERRA_FRESCA_IDIOMAS = {
                 "quand même savoir si tu veux contacter Tierra Fresca.",
 
     preguntaRepetir: "Veux-tu réécouter le message ? Réponds oui, ou non.",
-    repitiendo: "Avec plaisir. Le voici à nouveau.",
+    repitiendo: "Le voici à nouveau.",
     preguntaContacto: "Veux-tu contacter Tierra Fresca ? Réponds oui, ou non.",
     noEntiendo: "Je n'arrive pas à te comprendre, et c'est ma faute, pas la " +
                 "tienne. Si tu es sur un ordinateur, appuie sur la touche S " +
                 "pour oui, ou sur la touche N pour non.",
 
-    pedirNumero: "Quelle joie. Dis-moi ton numéro de portable en entier, d'un " +
+    pedirNumero: "Dis-moi ton numéro de portable en entier, d'un " +
                  "trait et tranquillement. Je te le répète à la fin pour que tu " +
                  "me le confirmes.",
-    numeroBorrado: "Effacé. Dis-moi ton numéro de portable en entier encore une " +
+    numeroBorrado: "Je l'ai effacé. Dis-moi ton numéro de portable en entier encore une " +
                    "fois, s'il te plaît.",
     numeroFaltaron: "Il me manque des chiffres. Dis-moi ton numéro de portable " +
                     "en entier encore une fois, s'il te plaît.",
 
     confirmar: "Le numéro que j'ai compris est : {numero}. S'il est bon, dis : correct. S'il est faux, dis : corriger. Et si tu veux l'entendre encore, dis : répéter.",
-    repetirNumero: "Bien sûr. {numero}. C'est bon ? Dis : correct, corriger, ou répéter.",
+    repetirNumero: "{numero}. C'est bon ? Dis : correct, corriger, ou répéter.",
 
     whatsapp: "Parfait. Je t'ouvre WhatsApp avec le message déjà écrit, tu " +
               "n'auras qu'à appuyer sur envoyer.",
@@ -346,11 +346,11 @@ window.TIERRA_FRESCA_IDIOMAS = {
     preguntaPdf: "Une dernière chose. Veux-tu télécharger notre proposition ? " +
                  "C'est un seul paragraphe, de dix lignes, écrit pour que ton " +
                  "lecteur d'écran le lise d'un trait. Réponds oui, ou non.",
-    cierreNumeroYPdf: "Voilà. Ton numéro est enregistré : un de nos partenaires te contacte très bientôt. Merci de nous avoir écoutés jusqu'au bout. Quand j'aurai fini de parler, la proposition se téléchargera toute seule. À bientôt.",
+    cierreNumeroYPdf: "Ton numéro est enregistré : un de nos partenaires te contacte très bientôt. Merci de nous avoir écoutés jusqu'au bout. Quand j'aurai fini de parler, la proposition se téléchargera toute seule. À bientôt.",
     cierreNumeroSinPdf: "Voilà. Ton numéro est enregistré et un de nos partenaires te contacte très bientôt. Merci de nous avoir écoutés jusqu'au bout. À bientôt.",
-    cierrePdfSinNumero: "Voilà. Merci de nous avoir donné ton temps. Quand j'aurai fini de parler, la proposition se téléchargera toute seule, pour quand tu voudras l'écouter tranquillement. À bientôt.",
-    cierreSinNada: "Avec plaisir. Merci de nous avoir donné ton temps et ton attention. Nous restons là, si un jour tu veux revenir. À bientôt.",
-    numeroGuardado: "Voilà, je l'ai.",
+    cierrePdfSinNumero: "Merci de nous avoir donné ton temps. Quand j'aurai fini de parler, la proposition se téléchargera toute seule, pour quand tu voudras l'écouter tranquillement. À bientôt.",
+    cierreSinNada: "Merci de nous avoir donné ton temps et ton attention. Nous restons là, si un jour tu veux revenir. À bientôt.",
+    numeroGuardado: "Je l'ai.",
     cierreConPdf: "Voilà, tu l'as dans ton dossier de téléchargements. Que ce " +
                   "plat ait le goût de la maison. À bientôt.",
     cierreSinPdf: "Parfait, je te le laisse comme ça. Que ce plat ait le goût " +

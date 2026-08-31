@@ -396,6 +396,64 @@
   });
 
   /* =====================================================================
+     Los tonos que marcan el turno de palabra
+     ===================================================================== */
+
+  // Dos pitidos cortos: uno cuando el microfono se abre y le toca hablar al
+  // usuario, y otro cuando se cierra y la pagina ya tiene lo que dijo.
+  //
+  // Sin ellos, quien no ve la pantalla no tiene forma de saber en que momento
+  // empezar. Callarse y esperar a que la maquina este lista es adivinar, y
+  // hablar antes de tiempo significa que la primera mitad de lo que dijo no
+  // se registro. Con dos sonidos distintos, el turno queda claro sin que haga
+  // falta explicarlo cada vez.
+  //
+  // Suben para pedir la palabra y bajan para devolverla, que es como funciona
+  // la entonacion de una pregunta y una respuesta en el habla de verdad.
+  //
+  // Se generan con WebAudio en el momento, sin archivos: asi no dependen de
+  // que se descargue nada y suenan igual en cualquier aparato y navegador.
+  function tono(frecuencias, duracion, volumen) {
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) { return; }
+      if (!contexto) { contexto = new AC(); }
+      if (contexto.state === "suspended") { contexto.resume(); }
+
+      var t0 = contexto.currentTime;
+      var i, osc, gan, ini, fin;
+
+      for (i = 0; i < frecuencias.length; i++) {
+        osc = contexto.createOscillator();
+        gan = contexto.createGain();
+        osc.type = "sine";
+        osc.frequency.value = frecuencias[i];
+
+        ini = t0 + (i * duracion);
+        fin = ini + duracion;
+
+        // Las rampas no son adorno: un oscilador que empieza y termina de
+        // golpe produce un chasquido, y un chasquido en el oido de alguien
+        // que esta escuchando con atencion es desagradable.
+        gan.gain.setValueAtTime(0.0001, ini);
+        gan.gain.exponentialRampToValueAtTime(volumen, ini + 0.015);
+        gan.gain.exponentialRampToValueAtTime(0.0001, fin);
+
+        osc.connect(gan);
+        gan.connect(contexto.destination);
+        osc.start(ini);
+        osc.stop(fin + 0.02);
+      }
+    } catch (e) { /* sin tono, pero la pagina sigue */ }
+  }
+
+  // Sube: te toca hablar.
+  function tonoTeToca() { tono([620, 930], 0.13, 0.20); }
+
+  // Baja: ya te oi, puedes parar.
+  function tonoYaTeOi() { tono([930, 620], 0.11, 0.16); }
+
+  /* =====================================================================
      Voz de la pagina
      ===================================================================== */
 
@@ -544,9 +602,15 @@
       yaHabloAlguna = true;
       return (pack.saludo || "Hola.") + " " + texto;
     }
-    // Si ya empieza por una frase corta terminada en punto o coma, esa hace
-    // de sacrificio y no se anade otra.
-    if (/^[^.?!¿¡]{2,18}[.,]\s/.test(texto)) { return texto; }
+    // NO hay excepciones. Aqui habia una: si la frase ya empezaba por una
+    // palabra corta seguida de punto, se daba por hecho que esa haria de
+    // sacrificio y no se anadia ninguna.
+    //
+    // Fue un error, y devolvio el recorte que ya estaba resuelto. Muchas de
+    // las frases empiezan asi y esas palabras SIGNIFICAN algo: "Listo, ya lo
+    // tengo", "Borrado. Dime tu numero otra vez". Perder "Borrado" es perder
+    // justo la confirmacion de que se borro. La palabra desechable tiene que
+    // ser una que sobre, no la primera que haya.
 
     var lista = pack.conectores || ["Bien."];
     var c = lista[nConector % lista.length];
@@ -931,9 +995,16 @@
   }
 
   function detenerMicrofono() {
+    // El tono de cierre solo suena si de verdad se estaba escuchando. Esta
+    // funcion se llama tambien antes de cada frase de la pagina, por
+    // seguridad, y ahi no hay ningun turno que cerrar.
+    var estabaEscuchando = queremosEscuchar;
+
     queremosEscuchar = false;
     if (!reconocimiento) { return; }
     try { reconocimiento.abort(); } catch (e) { /* ya estaba detenido */ }
+
+    if (estabaEscuchando) { tonoYaTeOi(); }
   }
 
   // escuchar(manejador): enciende el microfono y entrega cada frase final al
@@ -1000,6 +1071,11 @@
         try { reconocimiento.start(); } catch (e) { /* ya estaba activo */ }
       }, 300);
     };
+
+    // El tono va ANTES de abrir el microfono, no despues: si sonara con el
+    // microfono ya abierto, el propio reconocedor lo capturaria como si fuera
+    // el usuario hablando.
+    tonoTeToca();
 
     queremosEscuchar = true;
     try {

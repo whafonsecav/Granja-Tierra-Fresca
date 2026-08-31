@@ -115,9 +115,14 @@
 
   // Se habla siempre con lang en espanol y sin elegir voz: aqui no interesa
   // que voz sea, sino si el motor arranca.
+  //
+  // Cada frase empieza por una palabra desechable, igual que en la campana.
+  // Los motores de voz se comen el principio de la primera locucion despues
+  // de un silencio, y aqui eso importa el doble: si se comieran el "Prueba
+  // uno", quien esta escuchando no sabria cual de las dos pruebas oyo.
   function decir(texto, alArrancar) {
     if (!TTS || typeof window.SpeechSynthesisUtterance !== "function") { return; }
-    var u = new window.SpeechSynthesisUtterance(texto);
+    var u = new window.SpeechSynthesisUtterance("Atención. " + texto);
     u.lang = "es-CO";
     u.onstart = function () { if (alArrancar) { alArrancar(); } };
     try { TTS.speak(u); } catch (e) { /* sin efecto */ }
