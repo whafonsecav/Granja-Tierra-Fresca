@@ -413,6 +413,15 @@
 
   // Devuelve "si", "no" o null. Si la frase contiene ambas cosas, o ninguna,
   // devuelve null: es preferible volver a preguntar que adivinar mal.
+  // Cierto si ALGUNA de las transcripciones cumple el patron.
+  function algunaCumple(alternativas, patron) {
+    var i;
+    for (i = 0; i < alternativas.length; i++) {
+      if (patron.test(normalizar(alternativas[i]))) { return true; }
+    }
+    return false;
+  }
+
   function interpretarSiNo(texto) {
     var t = normalizar(texto);
     var si = PATRON_SI.test(t);
@@ -467,7 +476,13 @@
   // que se lo repitan. Un numero de diez digitos dicho de corrido no siempre
   // se retiene a la primera, y obligar a decir "no" para volver a oirlo
   // significaria borrarlo y dictarlo entero otra vez sin ninguna necesidad.
-  var PATRON_REPETIR = /\b(repita|repitalo|repitamelo|repetir|otra vez|de nuevo|no escuche|no oi|no entendi)\b/;
+  // Se busca por RAIZ de la palabra (repit..., repet...) y no por una lista
+  // cerrada de formas. La primera version listaba "repitalo" pero no
+  // "repitelo", que es como se dice de verdad, y esa unica forma faltante
+  // bastaba para que la peticion cayera al sino y terminara guardando el
+  // numero. Con la raiz quedan cubiertas repita, repitelo, repitamelo,
+  // repiteme, repetir y las demas sin tener que preverlas una por una.
+  var PATRON_REPETIR = /\b(repit\w*|repet\w*|vuelv\w* a (decir|leer)|otra vez|de nuevo|nuevamente|no escuche|no oi|no entendi|que dijo|como dijo)\b/;
   var PATRON_LISTO  = /\b(listo|ya|termine|termina|es todo|nada mas|ya esta|fin)\b/;
 
   // Lee los digitos de a uno, con una pausa mas larga cada tres. De corrido,
@@ -519,15 +534,24 @@
     reconocimiento.maxAlternatives = 3;
 
     reconocimiento.onresult = function (evento) {
-      var i, j, r;
+      var i, j, r, alternativas;
       for (i = evento.resultIndex; i < evento.results.length; i++) {
         r = evento.results[i];
         if (!r.isFinal) { continue; }
-        // Se prueban todas las alternativas: el motor a veces acierta en la
-        // segunda o la tercera y falla en la primera.
-        for (j = 0; j < r.length; j++) {
-          if (alEscuchar && alEscuchar(r[j].transcript) === true) { return; }
-        }
+
+        // El motor devuelve hasta tres transcripciones de lo mismo. Se le
+        // entregan TODAS JUNTAS al manejador, en vez de irlas probando una
+        // por una hasta que alguna encaje.
+        //
+        // La diferencia no es de estilo. Probandolas por separado, bastaba
+        // con que una sola alternativa trajera un "si" suelto para que ganara
+        // la confirmacion: por eso decir "repitalo" terminaba guardando el
+        // numero en vez de repetirlo. Viendolas juntas, el manejador puede
+        // decidir con todo a la vista y darle prioridad a lo que importa.
+        alternativas = [];
+        for (j = 0; j < r.length; j++) { alternativas.push(r[j].transcript); }
+
+        if (alEscuchar && alEscuchar(alternativas) === true) { return; }
       }
     };
 
@@ -674,8 +698,10 @@
 
   function textoDeArranque() {
     var gesto = esMovil() ? "Toque la pantalla" : "Oprima cualquier tecla";
-    return gesto + " para escuchar la experiencia de la Granja Tierra Fresca. " +
-           "Al finalizar le haremos unas preguntas muy breves.";
+    return gesto + " para escuchar un mensaje especial para usted, " +
+           "de la Granja Tierra Fresca. Al finalizar le haremos unas preguntas " +
+           "muy breves, así que le vamos a pedir permiso para usar su micrófono. " +
+           "Actívelo cuando su navegador se lo pregunte.";
   }
 
   function prepararArranque() {
@@ -716,8 +742,9 @@
     // lo que no se le pudo decir antes. En computador ya lo escucho y seria
     // repetirselo, asi que alli se entra directo.
     if (esMovil()) {
-      hablar("Gracias. Empieza la experiencia. Al finalizar le haré unas " +
-             "preguntas muy breves.", reproducir);
+      hablar("Gracias. Aquí va su mensaje. Al finalizar le haré unas preguntas " +
+             "muy breves, y para eso le voy a pedir permiso para usar su " +
+             "micrófono. Actívelo cuando se lo pregunte.", reproducir);
       return;
     }
 
@@ -783,10 +810,22 @@
     );
   }
 
-  // Manejador de escucha compartido por los tres estados de pregunta cerrada.
-  function oirSiNo(frase) {
-    var r = interpretarSiNo(frase);
+  // Manejador compartido por los estados de pregunta cerrada.
+  //
+  // Si dos transcripciones de la misma frase se contradicen, una diciendo si y
+  // otra diciendo no, no se elige ninguna: se vuelve a preguntar. Adivinar
+  // aqui significaria registrar un numero que el usuario no confirmo.
+  function oirSiNo(alternativas) {
     var enConfirmacion = (estado === "CONFIRMA_NUMERO");
+    var i, v, r = null;
+
+    for (i = 0; i < alternativas.length; i++) {
+      v = interpretarSiNo(alternativas[i]);
+      if (!v) { continue; }
+      if (r && r !== v) { r = null; break; }   // se contradicen entre si
+      r = v;
+    }
+
     if (!r) {
       reintentos++;
       if (reintentos >= 3) {
@@ -829,11 +868,10 @@
     if (estado === "CONFIRMA_NUMERO") {
       if (r === "si") { registrar(); }
       else {
-        // "No" borra el numero entero y vuelve a empezar. Se le dice
-        // explicitamente que se borro, para que no quede con la duda de si
-        // algo se guardo a medias.
-        hablar("Listo, lo borré por completo. Empezamos otra vez, sin afán.",
-               pedirNumero);
+        // "No" borra el numero entero. Se dice que se borro y se vuelve a
+        // pedir en la MISMA frase: encadenar dos locuciones dejaria al
+        // usuario varios segundos en silencio sin saber si hablar o esperar.
+        pedirNumero("Borrado.");
       }
     }
   }
@@ -842,32 +880,42 @@
      ESTADO 5 — Captura del celular, completo y de corrido
      ===================================================================== */
 
-  function pedirNumero() {
+  // El preludio es opcional. Sin el, se da la explicacion completa, que solo
+  // hace falta la primera vez. Con el, se dice que paso y se vuelve a pedir el
+  // numero en la MISMA frase: encadenar dos locuciones ("lo borre" y despues
+  // "digame el numero") deja al usuario varios segundos en silencio sin saber
+  // si tiene que hablar o esperar.
+  function pedirNumero(preludio) {
     estado = "CAPTURA_NUMERO";
     digitos = [];
     reintentos = 0;
-    hablar(
-      "Qué alegría. Por favor dígame su número de celular completo, " +
-      "de corrido y con calma. Yo se lo repito al final para que usted " +
-      "me confirme que quedó bien.",
-      function () {
-        escuchar(oirNumero);
-        esperarFinDelDictado();
-      }
-    );
+
+    var texto = preludio
+      ? preludio + " Dígame su número de celular completo otra vez, por favor."
+      : "Qué alegría. Por favor dígame su número de celular completo, " +
+        "de corrido y con calma. Yo se lo repito al final para que usted " +
+        "me confirme que quedó bien.";
+
+    hablar(texto, function () {
+      escuchar(oirNumero);
+      esperarFinDelDictado();
+    });
   }
 
   // No se interrumpe al usuario mientras dicta: el microfono queda abierto de
   // principio a fin. Ver regla 2 del encabezado.
-  function oirNumero(frase) {
-    var t = normalizar(frase);
+  function oirNumero(alternativas) {
+    if (algunaCumple(alternativas, PATRON_BORRAR)) { reiniciarNumero(); return true; }
 
-    if (PATRON_BORRAR.test(t)) { reiniciarNumero(); return true; }
+    // Se toma la primera transcripcion que traiga digitos. Las alternativas
+    // del motor suelen coincidir en los numeros aunque difieran en el resto.
+    var i, nuevos;
+    for (i = 0; i < alternativas.length; i++) {
+      nuevos = extraerDigitos(alternativas[i]);
+      if (nuevos.length) { agregarDigitos(nuevos); return true; }
+    }
 
-    var nuevos = extraerDigitos(frase);
-    if (nuevos.length) { agregarDigitos(nuevos); return true; }
-
-    if (PATRON_LISTO.test(t)) { cerrarCaptura(); return true; }
+    if (algunaCumple(alternativas, PATRON_LISTO)) { cerrarCaptura(); return true; }
     return false;
   }
 
@@ -898,19 +946,14 @@
 
   function reiniciarNumero() {
     window.clearTimeout(relojDictado);
-    digitos = [];
-    hablar("Listo, lo borré. Dígame el número completo otra vez, por favor.",
-           function () {
-             escuchar(oirNumero);
-             esperarFinDelDictado();
-           });
+    pedirNumero("Borrado.");
   }
 
   function cerrarCaptura() {
     window.clearTimeout(relojDictado);
     detenerMicrofono();
     if (digitos.length < MINIMO_DIGITOS) {
-      hablar("Creo que me faltaron números.", pedirNumero);
+      pedirNumero("Me faltaron números.");
       return;
     }
     confirmarNumero();
@@ -931,17 +974,19 @@
     );
   }
 
-  // Manejador propio de la confirmacion: antes de decidir si o no, atiende la
-  // peticion de repetir, que no es ninguna de las dos cosas. Se exige que la
-  // frase no traiga tambien una palabra de "si", para que "si, repitalo" no
-  // se lea como una confirmacion.
-  function oirConfirmacion(frase) {
-    var t = normalizar(frase);
-    if (PATRON_REPETIR.test(t) && !PATRON_SI.test(t)) {
+  // Manejador propio de la confirmacion.
+  //
+  // Pedir que se repita se evalua PRIMERO y sobre TODAS las transcripciones,
+  // y gana aunque alguna traiga tambien un si o un no. La razon es de riesgo,
+  // no de gramatica: repetir es reversible y no cuesta nada, mientras que
+  // confirmar registra el numero y borrar lo pierde entero. Ante la duda,
+  // conviene equivocarse hacia el lado que no rompe nada.
+  function oirConfirmacion(alternativas) {
+    if (algunaCumple(alternativas, PATRON_REPETIR)) {
       repetirNumero();
       return true;
     }
-    return oirSiNo(frase);
+    return oirSiNo(alternativas);
   }
 
   // Vuelve a leer el numero sin tocarlo y sin salir del estado.
