@@ -304,3 +304,60 @@ function probar() {
   else if (r.github)              { Logger.log('GITHUB: escrito en registros.json.'); }
   else                            { Logger.log('GITHUB: FALLO -> ' + r.errorGitHub); }
 }
+
+/**
+ * Diagnostico por partes.
+ *
+ * Cuando probar() falla con el "error desconocido" generico de Apps Script,
+ * esta funcion dice EN QUE PASO se rompe, que es lo que ese mensaje no dice.
+ * Ejecutela igual que probar(): seleccionela arriba y pulse Ejecutar.
+ */
+function diagnostico() {
+  Logger.log('--- 1. El script corre ---');
+  Logger.log('OK. Zona horaria: ' + ZONA_HORARIA);
+
+  Logger.log('--- 2. La fecha se formatea ---');
+  try {
+    Logger.log('OK: ' + Utilities.formatDate(new Date(), ZONA_HORARIA, 'dd/MM/yyyy HH:mm'));
+  } catch (e) {
+    Logger.log('FALLA AQUI -> ' + e);
+    return;
+  }
+
+  Logger.log('--- 3. Se encuentra la hoja de calculo ---');
+  var libro;
+  try {
+    libro = abrirLibro();
+    Logger.log('OK: "' + libro.getName() + '"');
+  } catch (e) {
+    Logger.log('FALLA AQUI -> ' + e);
+    Logger.log('Revise HOJA_ID: debe ser el tramo de la URL entre /d/ y /edit.');
+    return;
+  }
+
+  Logger.log('--- 4. Se encuentra la pestana ---');
+  var hoja = libro.getSheetByName(PESTANA);
+  if (hoja) {
+    Logger.log('OK: pestana "' + PESTANA + '", ' + hoja.getLastRow() + ' filas.');
+  } else {
+    Logger.log('No existe una pestana llamada "' + PESTANA + '".');
+    Logger.log('Se usaria la primera: "' + libro.getSheets()[0].getName() + '".');
+  }
+
+  Logger.log('--- 5. Se puede escribir ---');
+  try {
+    guardarEnHoja('PRUEBA DIAGNOSTICO', '0000000000');
+    Logger.log('OK. Se escribio una fila de prueba: borrela.');
+  } catch (e) {
+    Logger.log('FALLA AQUI -> ' + e);
+    return;
+  }
+
+  Logger.log('--- 6. GitHub ---');
+  Logger.log(ESCRIBIR_EN_GITHUB
+    ? 'Encendido: los numeros se publicarian en el repositorio.'
+    : 'Apagado, como debe estar. Los numeros van solo a la hoja.');
+
+  Logger.log('');
+  Logger.log('TODO EN ORDEN. Borre la fila de prueba de la hoja.');
+}
