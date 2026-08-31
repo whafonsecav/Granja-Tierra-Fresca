@@ -51,11 +51,10 @@ window.TIERRA_FRESCA_IDIOMAS = {
     aviso: "Al final te haré unas preguntas muy breves que podrás responder " +
            "con tu micrófono. Cuando el navegador te pida permiso, actívalo.",
 
-    bienvenida: "Tenemos un mensaje especial para ti. {gesto} para escucharlo. {promesa}",
+    etiquetaArranque: "Empezar a escuchar el mensaje de la Granja Tierra Fresca.",
+    bienvenida: "Tenemos un mensaje especial para ti. {aviso} {gesto} para escucharlo.",
     puente: "Tenemos un mensaje especial para ti. {aviso} Aquí va.",
-    promesa: "Al final te haré unas preguntas muy breves.",
     arranca: "Aquí va.",
-    avisoMicrofono: "Ahora te voy a hacer unas preguntas muy breves. Puedes responderlas con tu micrófono: cuando el navegador te pida permiso, actívalo.",
     tocaOtraVez: "{gesto} otra vez, por favor.",
 
     soloTeclado: "No puedo usar el micrófono, así que vamos por el teclado. " +
@@ -114,11 +113,10 @@ window.TIERRA_FRESCA_IDIOMAS = {
            "can answer with your microphone. When the browser asks for " +
            "permission, allow it.",
 
-    bienvenida: "We have a special message for you. {gesto} to hear it. {promesa}",
+    etiquetaArranque: "Start listening to the message from Granja Tierra Fresca.",
+    bienvenida: "We have a special message for you. {aviso} {gesto} to hear it.",
     puente: "We have a special message for you. {aviso} Here it goes.",
-    promesa: "At the end I'll ask you a couple of very short questions.",
     arranca: "Here it goes.",
-    avisoMicrofono: "Now I'm going to ask you a couple of very short questions. You can answer them with your microphone: when the browser asks for permission, allow it.",
     tocaOtraVez: "{gesto} again, please.",
 
     soloTeclado: "I can't use the microphone, so let's go with the keyboard. " +
@@ -174,11 +172,10 @@ window.TIERRA_FRESCA_IDIOMAS = {
            "responder com o seu microfone. Quando o navegador pedir permissão, " +
            "autorize.",
 
-    bienvenida: "Temos uma mensagem especial para você. {gesto} para ouvir. {promesa}",
+    etiquetaArranque: "Começar a ouvir a mensagem da Granja Tierra Fresca.",
+    bienvenida: "Temos uma mensagem especial para você. {aviso} {gesto} para ouvir.",
     puente: "Temos uma mensagem especial para você. {aviso} Lá vai.",
-    promesa: "No final vou te fazer umas perguntas bem curtas.",
     arranca: "Lá vai.",
-    avisoMicrofono: "Agora vou te fazer umas perguntas bem curtas. Você pode responder com o seu microfone: quando o navegador pedir permissão, autorize.",
     tocaOtraVez: "{gesto} de novo, por favor.",
 
     soloTeclado: "Não consigo usar o microfone, então vamos pelo teclado. " +
@@ -236,11 +233,10 @@ window.TIERRA_FRESCA_IDIOMAS = {
            "rispondere con il microfono. Quando il browser ti chiede il " +
            "permesso, autorizzalo.",
 
-    bienvenida: "Abbiamo un messaggio speciale per te. {gesto} per ascoltarlo. {promesa}",
+    etiquetaArranque: "Inizia ad ascoltare il messaggio di Granja Tierra Fresca.",
+    bienvenida: "Abbiamo un messaggio speciale per te. {aviso} {gesto} per ascoltarlo.",
     puente: "Abbiamo un messaggio speciale per te. {aviso} Eccolo.",
-    promesa: "Alla fine ti farò qualche domanda molto breve.",
     arranca: "Eccolo.",
-    avisoMicrofono: "Adesso ti faccio qualche domanda molto breve. Puoi rispondere con il microfono: quando il browser ti chiede il permesso, autorizzalo.",
     tocaOtraVez: "{gesto} di nuovo, per favore.",
 
     soloTeclado: "Non riesco a usare il microfono, quindi andiamo con la " +
@@ -296,11 +292,10 @@ window.TIERRA_FRESCA_IDIOMAS = {
            "tu pourras répondre avec ton micro. Quand le navigateur demandera " +
            "l'autorisation, accepte-la.",
 
-    bienvenida: "Nous avons un message spécial pour toi. {gesto} pour l'écouter. {promesa}",
+    etiquetaArranque: "Commencer à écouter le message de Granja Tierra Fresca.",
+    bienvenida: "Nous avons un message spécial pour toi. {aviso} {gesto} pour l'écouter.",
     puente: "Nous avons un message spécial pour toi. {aviso} Le voici.",
-    promesa: "À la fin je te poserai quelques questions très courtes.",
     arranca: "Le voici.",
-    avisoMicrofono: "Maintenant je vais te poser quelques questions très courtes. Tu peux y répondre avec ton micro : quand le navigateur demandera l'autorisation, accepte-la.",
     tocaOtraVez: "{gesto} encore une fois, s'il te plaît.",
 
     soloTeclado: "Je ne peux pas utiliser le micro, alors passons au clavier. " +

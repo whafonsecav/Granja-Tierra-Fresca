@@ -114,6 +114,14 @@
   // en el camino sin sintesis y quedaria en silencio sin razon.
   var VELOCIDAD_VOZ = esMovil() ? 1 : 1.25;
 
+  // Cuanto se espera antes de mandarle el texto al lector de pantalla.
+  //
+  // Tiene que ser mayor que el silencio inicial, porque la voz no empieza a
+  // sonar hasta despues de el. Con un margen encima para el arranque del
+  // motor. Si en ese plazo la voz no dio senales, se da por bloqueada y se
+  // deja que el lector de pantalla haga el trabajo.
+  var ESPERA_ANUNCIO = SILENCIO_INICIAL_MS + 1500;
+
   var DIGITOS_CELULAR = 10;   // Colombia: 10 digitos
   var MINIMO_DIGITOS  = 7;
 
@@ -155,11 +163,39 @@
      Canal de respaldo: la region aria-live
      ===================================================================== */
 
-  function anunciar(texto) {
+  var relojAnuncio = null;
+
+  // Escribe en la region aria-live SIN condiciones. Solo se usa cuando se
+  // sabe que la voz de la pagina no va a hablar.
+  function anunciarYa(texto) {
     // Vaciar y volver a escribir obliga a NVDA y a VoiceOver a releer un
     // texto aunque sea identico al anterior.
     anuncio.textContent = "";
     window.setTimeout(function () { anuncio.textContent = texto; }, 60);
+  }
+
+  // Anuncia solo SI LA VOZ DE LA PAGINA NO ALCANZA A DECIRLO.
+  //
+  // Los dos canales dicen lo mismo: la region aria-live la lee el lector de
+  // pantalla del usuario, y la voz sintetica la emite la pagina. Si los dos
+  // funcionan a la vez, alguien ciego oye dos voces superpuestas con medio
+  // segundo de desfase. Es peor que el silencio.
+  //
+  // No hay manera de preguntarle al navegador si hay un lector de pantalla
+  // encendido: esa informacion no se expone, y con razon. Asi que en lugar de
+  // detectarlo se ordenan los canales en el tiempo. Se deja pendiente el
+  // anuncio y se cancela en cuanto el motor de voz avisa que empezo a hablar.
+  // Si nunca empieza, el anuncio sale y el lector de pantalla se hace cargo.
+  function anunciar(texto) {
+    window.clearTimeout(relojAnuncio);
+    relojAnuncio = window.setTimeout(function () {
+      anunciarYa(texto);
+    }, ESPERA_ANUNCIO);
+  }
+
+  // La voz empezo a sonar: el lector de pantalla ya no tiene que repetirlo.
+  function callarAnuncio() {
+    window.clearTimeout(relojAnuncio);
   }
 
   /* =====================================================================
@@ -294,7 +330,14 @@
     if (datos && datos.numero !== undefined) {
       t = t.split("{numero}").join(datos.numero);
     }
-    return t;
+
+    // Barrido final: si quedo algun marcador sin reemplazar, se borra en vez
+    // de leerse. Un {promesa} olvidado se pronuncio en voz alta como la
+    // palabra "Promesa" en mitad de la bienvenida, y eso no puede repetirse:
+    // un texto incompleto es un problema, pero uno que se lee en voz alta es
+    // un ridiculo delante del destinatario.
+    t = t.replace(/\{[a-zA-Z]+\}/g, "");
+    return t.replace(/\s{2,}/g, " ").trim();
   }
 
   /* =====================================================================
@@ -577,7 +620,11 @@
     function seguir() { if (despues) { despues(); } }
 
     if (!TTS || typeof window.SpeechSynthesisUtterance !== "function") {
-      // Sin sintesis: el lector de pantalla ya recibio el texto por aria-live.
+      // Este navegador no sintetiza voz. No hay riesgo de que se pisen dos
+      // canales, asi que el anuncio sale de una y lo lee el lector de
+      // pantalla.
+      callarAnuncio();
+      anunciarYa(texto);
       window.setTimeout(seguir, SILENCIO_INICIAL_MS + tiempoDeLectura(texto));
       return;
     }
@@ -625,7 +672,11 @@
     }
 
     var arranco = false;
-    locucion.onstart = function () { arranco = true; algunaVozSono = true; };
+    locucion.onstart = function () {
+      arranco = true;
+      algunaVozSono = true;
+      callarAnuncio();
+    };
     locucion.onend = finalizar;
     locucion.onerror = finalizar;
     // Red de seguridad: en algunos Chrome "onend" no dispara si la pestana
@@ -649,7 +700,11 @@
       try {
         TTS.cancel();
         var reintento = nuevaFrase(texto, local, idioma);
-        reintento.onstart = function () { arranco = true; algunaVozSono = true; };
+        reintento.onstart = function () {
+          arranco = true;
+          algunaVozSono = true;
+          callarAnuncio();
+        };
         reintento.onend = finalizar;
         reintento.onerror = finalizar;
         TTS.speak(reintento);
@@ -704,7 +759,10 @@
       listo = true;
       window.setTimeout(seguir, 250);
     }
-    locucion.onstart = function () { algunaVozSono = true; };
+    locucion.onstart = function () {
+      algunaVozSono = true;
+      callarAnuncio();
+    };
     locucion.onend = finalizar;
     locucion.onerror = finalizar;
     window.setTimeout(finalizar, tiempoDeLectura(texto) + 5000);
@@ -1044,8 +1102,13 @@
   }
 
   function prepararArranque() {
-    var texto = textoDeArranque();
-    arranque.setAttribute("aria-label", texto);
+    // La etiqueta es corta a proposito. El lector de pantalla la lee en
+    // cuanto el elemento recibe el foco, sin que se pueda evitar, asi que si
+    // llevara el mensaje completo se solaparia con la voz de la pagina
+    // diciendo lo mismo. La etiqueta identifica el control; el mensaje lo
+    // cuenta la voz, y si la voz esta bloqueada lo recoge la region
+    // aria-live unos segundos despues.
+    arranque.setAttribute("aria-label", frase("es", "etiquetaArranque"));
 
     // El foco es lo que hace que el lector de pantalla lea la instruccion
     // sola, sin que el usuario tenga que buscar nada en la pagina.
@@ -1062,7 +1125,7 @@
     // Antes esto estaba apagado en movil por completo, para evitar que la
     // frase en cola se soltara encima del mensaje del toque. Fue un exceso:
     // apago tambien Android, donde funcionaba bien.
-    hablar("bienvenida");
+    hablar("bienvenida", alTerminarBienvenida);
   }
 
   // Arranca y pausa el audio en el acto, para dejarlo desbloqueado. Solo se
@@ -1083,9 +1146,40 @@
     } catch (e) { /* sin efecto */ }
   }
 
+  var bienvenidaTerminada = false;
+  var arrancarAlTerminar = false;
+
+  // La bienvenida acabo de decirse. Si el usuario ya habia tocado la pantalla
+  // mientras sonaba, es ahora cuando arranca la experiencia.
+  function alTerminarBienvenida() {
+    bienvenidaTerminada = true;
+    if (arrancarAlTerminar) {
+      arrancarAlTerminar = false;
+      desbloquearAudio();
+      hablarDeInmediato("arranca", reproducir);
+    }
+  }
+
   function comenzar() {
     if (yaArranco) { return; }
     yaArranco = true;
+
+    // Si la bienvenida esta sonando, el toque NO la corta: se anota la
+    // intencion y la experiencia arranca sola en cuanto termine de hablar.
+    // El usuario tiene que oir entera la explicacion de lo que viene, y
+    // ademas es donde se le avisa del microfono.
+    //
+    // La condicion mira algunaVozSono, que solo se pone en onstart, o sea
+    // cuando el motor empezo a emitir de verdad. Si la voz estaba bloqueada
+    // nunca sono nada, no hay nada que respetar, y se arranca de inmediato:
+    // esa llamada dentro del gesto es la que desbloquea el motor en iOS.
+    if (algunaVozSono && !bienvenidaTerminada) {
+      arrancarAlTerminar = true;
+      desbloquearAudio();
+      mantenerPantallaEncendida();
+      arranque.blur();
+      return;
+    }
 
     // Se cancela SIEMPRE lo que haya quedado en cola, sin mirar si llego a
     // sonar. Antes esto solo se hacia cuando la voz si habia sonado, y era
@@ -1154,20 +1248,11 @@
     }
   }
 
-  var yaAvisoDelMicrofono = false;
-
-  audio.addEventListener("ended", function () {
-    // El aviso del microfono se da aqui, una sola vez, porque este es el
-    // momento en que empieza a hacer falta: el navegador va a pedir el
-    // permiso en unos segundos. Anunciarlo al abrir la pagina, que es donde
-    // estaba antes, obligaba a repetirlo o a que alguien se lo perdiera.
-    if (!yaAvisoDelMicrofono) {
-      yaAvisoDelMicrofono = true;
-      hablar("avisoMicrofono", preguntarRepetir);
-      return;
-    }
-    preguntarRepetir();
-  });
+  // Al terminar el audio entran las preguntas de una vez. El aviso del
+  // microfono ya se dio en la bienvenida, antes de tocar la pantalla: alli es
+  // donde el usuario decide si sigue o no, y por eso tiene que saber de
+  // entrada a que se esta metiendo.
+  audio.addEventListener("ended", function () { preguntarRepetir(); });
 
   audio.addEventListener("error", function () {
     hablar("errorAudio", preguntarContacto);
@@ -1440,10 +1525,13 @@
     hablar("registrado", preguntarPdf);
   }
 
+  // Antes esto decia adios y acto seguido preguntaba "una ultima cosa", que
+  // sonaba a que la conversacion se hubiera reabierto sola. Ahora solo hay
+  // una despedida en toda la pieza, y esta al final de todo, en terminar().
   function despedirse() {
     window.clearTimeout(relojDictado);
     detenerMicrofono();
-    hablar("despedida", preguntarPdf);
+    preguntarPdf();
   }
 
   /* =====================================================================
