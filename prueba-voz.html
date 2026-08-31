@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es-CO">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prueba de voz — Granja Tierra Fresca</title>
+
+<!--
+  ======================================================================
+  Pagina de diagnostico. No es parte de la campana.
+
+  Existe para contestar con hechos una pregunta que estabamos discutiendo
+  a base de suposiciones: si este aparato deja que una pagina hable sin
+  que el usuario toque nada.
+
+  La respuesta no es la misma en todas partes. Chrome de Android suele
+  permitirlo, Edge no, y de iOS teniamos versiones encontradas. En vez de
+  seguir creyendo, se le pregunta al aparato.
+
+  La prueba es en dos actos:
+
+    1. Al abrir, la pagina intenta hablar SIN que nadie toque nada, y
+       apunta si el motor llego a arrancar de verdad. La prueba no es que
+       speak() no de error, sino que dispare "onstart": en iOS, speaking
+       llega a devolver true con la locucion encolada y muda.
+
+    2. Despues hay un boton, para comprobar que con un gesto de por medio
+       si habla. Si el primer acto falla y el segundo funciona, este
+       aparato exige el gesto y no hay vuelta de hoja.
+
+  Todo lo que averigua se muestra en pantalla en letra grande y se dice
+  en voz alta, para que sirva igual mirandola que escuchandola.
+  ======================================================================
+-->
+
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    margin: 0; padding: 24px 20px 60px;
+    font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    font-size: 17px; line-height: 1.6;
+    max-width: 40rem; margin-inline: auto;
+  }
+  h1 { font-size: 1.5rem; line-height: 1.25; margin: 0 0 4px; }
+  .sub { color: #666; margin: 0 0 26px; font-size: .95rem; }
+
+  .resultado {
+    border: 3px solid currentColor; border-radius: 12px;
+    padding: 18px 20px; margin: 0 0 22px; font-size: 1.15rem;
+  }
+  .si   { color: #14670f; background: #eefaec; }
+  .no   { color: #8c1d16; background: #fdeeed; }
+  .duda { color: #6b5300; background: #fdf7e3; }
+
+  dl { margin: 0; }
+  dt { font-weight: 700; margin-top: 14px; }
+  dd { margin: 2px 0 0; }
+
+  button {
+    display: block; width: 100%; min-height: 76px; margin: 26px 0 0;
+    font: inherit; font-size: 1.15rem; font-weight: 700;
+    color: #fff; background: #a81f18;
+    border: 0; border-radius: 12px; cursor: pointer;
+  }
+  button:focus-visible { outline: 4px solid #ffd24a; outline-offset: 3px; }
+
+  code { font-size: .9em; word-break: break-all; }
+  @media (prefers-color-scheme: dark) {
+    body { background: #141414; color: #eee; }
+    .sub { color: #aaa; }
+    .si { background: #16240f; } .no { background: #2a1412; } .duda { background: #26210f; }
+  }
+</style>
+</head>
+<body>
+
+<h1>¿Este aparato deja hablar a la página sin tocarla?</h1>
+<p class="sub">Prueba de la Granja Tierra Fresca. No forma parte de la campaña.</p>
+
+<div class="resultado duda" id="veredicto" role="status" aria-live="polite">
+  Probando… espera unos segundos sin tocar la pantalla.
+</div>
+
+<dl id="datos"></dl>
+
+<button id="probar" type="button">
+  Ahora tócame para probar con gesto
+</button>
+
+<script>
+(function () {
+  "use strict";
+
+  var TTS = window.speechSynthesis || null;
+  var veredicto = document.getElementById("veredicto");
+  var datos = document.getElementById("datos");
+  var boton = document.getElementById("probar");
+
+  var sonoSinGesto = false;
+  var sonoConGesto = false;
+
+  function apuntar(titulo, valor) {
+    var dt = document.createElement("dt");
+    var dd = document.createElement("dd");
+    dt.textContent = titulo;
+    dd.textContent = valor;
+    datos.appendChild(dt);
+    datos.appendChild(dd);
+  }
+
+  function veredicto_(clase, texto) {
+    veredicto.className = "resultado " + clase;
+    veredicto.textContent = texto;
+  }
+
+  // Se habla siempre con lang en espanol y sin elegir voz: aqui no interesa
+  // que voz sea, sino si el motor arranca.
+  function decir(texto, alArrancar) {
+    if (!TTS || typeof window.SpeechSynthesisUtterance !== "function") { return; }
+    var u = new window.SpeechSynthesisUtterance(texto);
+    u.lang = "es-CO";
+    u.onstart = function () { if (alArrancar) { alArrancar(); } };
+    try { TTS.speak(u); } catch (e) { /* sin efecto */ }
+  }
+
+  // ---- Lo que se puede saber sin probar nada -----------------------------
+  apuntar("Navegador", navigator.userAgent);
+  apuntar("¿Existe speechSynthesis?", TTS ? "Sí" : "No");
+  apuntar("¿Existe reconocimiento de voz?",
+          (window.SpeechRecognition || window.webkitSpeechRecognition) ? "Sí" : "No");
+
+  if (!TTS) {
+    veredicto_("no", "Este navegador no tiene voz sintética. La página no puede hablar aquí de ninguna forma.");
+    boton.hidden = true;
+    return;
+  }
+
+  function listarVoces() {
+    var v = TTS.getVoices() || [];
+    var esp = [];
+    var i;
+    for (i = 0; i < v.length; i++) {
+      if (/^es/i.test(v[i].lang)) { esp.push(v[i].name); }
+    }
+    apuntar("Voces instaladas", v.length ? String(v.length) : "todavía ninguna");
+    apuntar("Voces en español", esp.length ? esp.join(", ") : "ninguna");
+  }
+  window.setTimeout(listarVoces, 1500);
+
+  // ---- Acto 1: hablar sin que nadie toque nada ---------------------------
+  decir("Prueba uno. Si oyes esta frase, este aparato deja hablar a la página " +
+        "sin que toques nada.",
+        function () { sonoSinGesto = true; });
+
+  window.setTimeout(function () {
+    apuntar("¿Habló sin tocar la pantalla?", sonoSinGesto ? "SÍ" : "NO");
+    if (sonoSinGesto) {
+      veredicto_("si",
+        "Este aparato SÍ deja hablar a la página sin tocarla. Si en la " +
+        "campaña no hablaba, la causa es otra y hay que buscarla.");
+    } else {
+      veredicto_("no",
+        "Este aparato NO deja hablar a la página hasta que la toques. " +
+        "Ahora pulsa el botón de abajo para confirmar que con un toque sí habla.");
+    }
+  }, 4000);
+
+  // ---- Acto 2: hablar con un gesto de por medio --------------------------
+  boton.addEventListener("click", function () {
+    // Sincrono y dentro del gesto: es lo que exige iOS.
+    decir("Prueba dos. Esta frase salió después de que tocaras la pantalla.",
+          function () { sonoConGesto = true; });
+
+    window.setTimeout(function () {
+      apuntar("¿Habló al tocar la pantalla?", sonoConGesto ? "SÍ" : "NO");
+
+      if (sonoSinGesto && sonoConGesto) {
+        veredicto_("si", "Habla en los dos casos. Este aparato no impone ninguna restricción.");
+      } else if (!sonoSinGesto && sonoConGesto) {
+        veredicto_("duda",
+          "Confirmado: este aparato exige un toque antes de dejar hablar a la " +
+          "página. Es una regla del sistema y no se puede desactivar desde el código.");
+      } else if (sonoSinGesto && !sonoConGesto) {
+        veredicto_("duda",
+          "Raro: habló sola pero no al tocar. Vuelve a intentarlo, puede haber " +
+          "sido un tropiezo del motor de voz.");
+      } else {
+        veredicto_("no",
+          "No habló en ninguno de los dos casos. Lo más probable es que el " +
+          "aparato esté en silencio, con el volumen bajo, o sin ninguna voz instalada.");
+      }
+    }, 3000);
+  });
+})();
+</script>
+
+</body>
+</html>
