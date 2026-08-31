@@ -9,11 +9,11 @@
                        entera es la superficie de arranque y tiene el foco, asi
                        que el lector de pantalla lee la instruccion sola.
      REPRODUCIENDO     Suena el audio ASMR.
-     PREGUNTA_REPETIR  "Desea reproducir nuevamente?"  ->  si / no
-     PREGUNTA_CONTACTO "Desea contactar a Tierra Fresca?"  ->  si / no
+     PREGUNTA_REPETIR  "Quieres escuchar el mensaje otra vez?"  ->  si / no
+     PREGUNTA_CONTACTO "Quieres contactar a Tierra Fresca?"  ->  si / no
      CAPTURA_NUMERO    Dicta el celular completo, de corrido.
      CONFIRMA_NUMERO   Se le repite el numero digito por digito.  ->  si / no
-     PREGUNTA_PDF      "Desea descargar la propuesta en PDF?"  ->  si / no
+     PREGUNTA_PDF      "Quieres descargar la propuesta en PDF?"  ->  si / no
      FIN               Despedida.
 
    CUATRO REGLAS QUE SOSTIENEN TODO EL ARCHIVO
@@ -165,6 +165,49 @@
       fuente.start();
     } catch (e) { /* sin efecto: se pierde el respiro, no la frase */ }
   }
+
+  /* =====================================================================
+     Mantener la pantalla encendida
+     ===================================================================== */
+
+  var bloqueoPantalla = null;
+
+  // Durante el minuto y medio de audio nadie toca el telefono, asi que el
+  // sistema lo da por inactivo y apaga la pantalla. Cuando eso pasa, el audio
+  // se pausa o la sesion de reconocimiento se cae, y el usuario se encuentra
+  // la experiencia rota sin haber hecho nada mal.
+  //
+  // La Screen Wake Lock API lo impide. Necesita HTTPS y que la pagina este
+  // visible, dos condiciones que aqui se cumplen. En navegadores que no la
+  // tengan (iOS anterior a 16.4) no hay alternativa razonable, y simplemente
+  // no se bloquea nada: la pagina sigue funcionando igual.
+  function mantenerPantallaEncendida() {
+    if (bloqueoPantalla) { return; }
+    if (!navigator.wakeLock || typeof navigator.wakeLock.request !== "function") {
+      return;
+    }
+    try {
+      navigator.wakeLock.request("screen").then(function (b) {
+        bloqueoPantalla = b;
+        b.addEventListener("release", function () { bloqueoPantalla = null; });
+      })["catch"](function () { bloqueoPantalla = null; });
+    } catch (e) { bloqueoPantalla = null; }
+  }
+
+  function soltarPantalla() {
+    if (!bloqueoPantalla) { return; }
+    try { bloqueoPantalla.release(); } catch (e) { /* ya estaba suelto */ }
+    bloqueoPantalla = null;
+  }
+
+  // El sistema suelta el bloqueo solo en cuanto la pestana pasa a segundo
+  // plano. Al volver hay que volver a pedirlo, o la pantalla se apagaria en
+  // el resto de la sesion.
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible" && yaArranco) {
+      mantenerPantallaEncendida();
+    }
+  });
 
   /* =====================================================================
      Voz de la pagina
@@ -591,9 +634,9 @@
     yaAvisoTeclado = true;
     hablar(
       "No puedo usar el micrófono, así que vamos por el teclado. " +
-      "Presione la tecla ese para decir sí, y la tecla ene para decir no. " +
-      "Cuando le pida su celular, márquelo con las teclas de números. " +
-      "Y si quiere que le repita el número, presione la tecla erre."
+      "Presiona la tecla ese para decir sí, y la tecla ene para decir no. " +
+      "Cuando te pida tu celular, márcalo con las teclas de números. " +
+      "Y si quieres que te repita el número, presiona la tecla erre."
     );
   }
 
@@ -696,12 +739,17 @@
      ESTADO 1 — Espera del gesto
      ===================================================================== */
 
+  // El aviso del microfono va aqui y en ningun otro lado. Antes se decia dos
+  // veces, una antes del gesto y otra al tocar, y sonaba a que la pagina se
+  // repetia sola.
+  var AVISO_PREGUNTAS =
+    "Al final te haré unas preguntas muy breves que podrás responder con tu " +
+    "micrófono. Cuando el navegador te pida permiso, actívalo.";
+
   function textoDeArranque() {
-    var gesto = esMovil() ? "Toque la pantalla" : "Oprima cualquier tecla";
-    return gesto + " para escuchar un mensaje especial para usted, " +
-           "de la Granja Tierra Fresca. Al finalizar le haremos unas preguntas " +
-           "muy breves, así que le vamos a pedir permiso para usar su micrófono. " +
-           "Actívelo cuando su navegador se lo pregunte.";
+    var gesto = esMovil() ? "Toca la pantalla" : "Oprime cualquier tecla";
+    return "Tenemos un mensaje especial para ti. " + gesto +
+           " para escucharlo. " + AVISO_PREGUNTAS;
   }
 
   function prepararArranque() {
@@ -712,15 +760,16 @@
     // sola, sin que el usuario tenga que buscar nada en la pagina.
     arranque.focus();
 
-    // Se dice con hablar(), igual que todo lo demas, para que la instruccion
-    // de arranque reciba el mismo calentamiento contra el recorte. Antes se
-    // sintetizaba aparte y era justo la frase que mas se cortaba: es la
-    // primera de la sesion, con el canal de audio recien despertado.
+    // En computador se dice en voz alta de una. En movil NO se intenta
+    // siquiera: iOS y Android bloquean la voz antes del primer gesto, y la
+    // frase se quedaba en cola hasta que el toque la soltaba, con lo cual el
+    // usuario oia la bienvenida DESPUES de haber tocado, encima del mensaje
+    // que si correspondia a ese momento. Sonaba a que la pagina se repetia.
     //
-    // speechSynthesis no esta sujeto a la politica de autoplay en la mayoria
-    // de navegadores, asi que suele sonar sin gesto previo. Si no suena, el
-    // lector de pantalla ya leyo el aria-label y no se pierde nada.
-    hablar(texto);
+    // En movil el aria-label ya lleva el mismo texto para el lector de
+    // pantalla, y quien no lo use lo escucha completo en cuanto toca.
+    if (!esMovil()) { hablar(texto); }
+    else { anunciar(texto); }
   }
 
   function comenzar() {
@@ -732,6 +781,7 @@
     }
 
     despertarSalida();
+    mantenerPantallaEncendida();
 
     arranque.setAttribute("aria-label", "Reproduciendo.");
     arranque.blur();
@@ -742,9 +792,8 @@
     // lo que no se le pudo decir antes. En computador ya lo escucho y seria
     // repetirselo, asi que alli se entra directo.
     if (esMovil()) {
-      hablar("Gracias. Aquí va su mensaje. Al finalizar le haré unas preguntas " +
-             "muy breves, y para eso le voy a pedir permiso para usar su " +
-             "micrófono. Actívelo cuando se lo pregunte.", reproducir);
+      hablar("Tenemos un mensaje especial para ti. " + AVISO_PREGUNTAS +
+             " Aquí va.", reproducir);
       return;
     }
 
@@ -778,34 +827,34 @@
 
   audio.addEventListener("error", function () {
     hablar(
-      "No fue posible cargar el audio, y le pido disculpas. " +
-      "De todas formas quisiera saber si desea contactar a Tierra Fresca.",
+      "No fue posible cargar el audio, y te pido disculpas. " +
+      "De todas formas quisiera saber si quieres contactar a Tierra Fresca.",
       preguntarContacto
     );
   });
 
   /* =====================================================================
-     ESTADO 3 — "Desea reproducir nuevamente?"
+     ESTADO 3 — "Quieres escuchar el mensaje otra vez?"
      ===================================================================== */
 
   function preguntarRepetir() {
     estado = "PREGUNTA_REPETIR";
     reintentos = 0;
     hablar(
-      "¿Desea reproducir la experiencia nuevamente? Responda sí, o no.",
+      "¿Quieres escuchar el mensaje otra vez? Responde sí, o no.",
       function () { escuchar(oirSiNo); }
     );
   }
 
   /* =====================================================================
-     ESTADO 4 — "Desea contactar a Tierra Fresca?"
+     ESTADO 4 — "Quieres contactar a Tierra Fresca?"
      ===================================================================== */
 
   function preguntarContacto() {
     estado = "PREGUNTA_CONTACTO";
     reintentos = 0;
     hablar(
-      "¿Desea contactar a Tierra Fresca? Responda sí, o no.",
+      "¿Quieres contactar a Tierra Fresca? Responde sí, o no.",
       function () { escuchar(oirSiNo); }
     );
   }
@@ -832,8 +881,8 @@
         // Tres intentos fallidos: seguir insistiendo seria maltratarlo.
         reintentos = 0;
         hablar(
-          "No logro entenderle, y la culpa es mía, no suya. " +
-          "Si está en un computador, presione la tecla ese para sí, " +
+          "No logro entenderte, y la culpa es mía, no tuya. " +
+          "Si estás en un computador, presiona la tecla ese para sí, " +
           "o la tecla ene para no.",
           function () { escuchar(enConfirmacion ? oirConfirmacion : oirSiNo); }
         );
@@ -891,10 +940,10 @@
     reintentos = 0;
 
     var texto = preludio
-      ? preludio + " Dígame su número de celular completo otra vez, por favor."
-      : "Qué alegría. Por favor dígame su número de celular completo, " +
-        "de corrido y con calma. Yo se lo repito al final para que usted " +
-        "me confirme que quedó bien.";
+      ? preludio + " Dime tu número de celular completo otra vez, por favor."
+      : "Qué alegría. Dime tu número de celular completo, de corrido y " +
+        "con calma. Yo te lo repito al final para que me confirmes que " +
+        "quedó bien.";
 
     hablar(texto, function () {
       escuchar(oirNumero);
@@ -968,8 +1017,8 @@
     reintentos = 0;
     hablar(
       "El número que entendí es: " + leerDigitos(digitos) + ". " +
-      "Si está correcto, diga sí. Si está mal, diga no, y lo tomamos otra vez. " +
-      "Y si prefiere que se lo repita, dígame: repítalo.",
+      "Si está correcto, di sí. Si está mal, di no, y lo tomamos otra vez. " +
+      "Y si prefieres que te lo repita, dime: repítelo.",
       function () { escuchar(oirConfirmacion); }
     );
   }
@@ -994,8 +1043,8 @@
     detenerMicrofono();
     reintentos = 0;
     hablar(
-      "Claro. Escúchelo otra vez: " + leerDigitos(digitos) + ". " +
-      "¿Está correcto? Diga sí, o no.",
+      "Claro. Escúchalo otra vez: " + leerDigitos(digitos) + ". " +
+      "¿Está correcto? Di sí, o no.",
       function () { escuchar(oirConfirmacion); }
     );
   }
@@ -1060,8 +1109,8 @@
       var url = "https://wa.me/" + NUMERO_WHATSAPP +
                 "?text=" + encodeURIComponent(MENSAJE_WHATSAPP);
       hablar(
-        "Perfecto. Le voy a abrir WhatsApp con el mensaje ya escrito, " +
-        "para que solo tenga que pulsar enviar.",
+        "Perfecto. Te voy a abrir WhatsApp con el mensaje ya escrito, " +
+        "para que solo tengas que pulsar enviar.",
         function () { window.location.href = url; }
       );
       window.setTimeout(function () { window.location.href = url; }, 9000);
@@ -1069,9 +1118,9 @@
     }
 
     hablar(
-      "Listo. Su número ya quedó registrado. " +
-      "Uno de nuestros aliados se va a comunicar con usted para coordinar " +
-      "su envío.",
+      "Listo. Tu número ya quedó registrado. " +
+      "Uno de nuestros aliados se va a comunicar contigo para coordinar " +
+      "tu envío.",
       preguntarPdf
     );
   }
@@ -1080,7 +1129,7 @@
     window.clearTimeout(relojDictado);
     detenerMicrofono();
     hablar(
-      "Con mucho gusto. Gracias por darnos un rato de su tiempo y de su atención.",
+      "Con mucho gusto. Gracias por darnos un rato de tu tiempo y de tu atención.",
       preguntarPdf
     );
   }
@@ -1098,9 +1147,9 @@
     estado = "PREGUNTA_PDF";
     reintentos = 0;
     hablar(
-      "Una última cosa. ¿Desea descargar nuestra propuesta? " +
-      "Es un solo párrafo, de diez líneas, escrito para que su lector de " +
-      "pantalla se lo lea de corrido. Responda sí, o no.",
+      "Una última cosa. ¿Quieres descargar nuestra propuesta? " +
+      "Es un solo párrafo, de diez líneas, escrito para que tu lector de " +
+      "pantalla te lo lea de corrido. Responde sí, o no.",
       function () { escuchar(oirSiNo); }
     );
   }
@@ -1115,15 +1164,15 @@
       // como una accion del usuario en vez de bloquearla.
       descargarPdf();
       hablar(
-        "Listo, ya lo tiene en su carpeta de descargas. " +
-        "Que ese guiso le quede como en casa. Hasta pronto."
+        "Listo, ya lo tienes en tu carpeta de descargas. " +
+        "Que ese guiso te quede como en casa. Hasta pronto."
       );
       return;
     }
 
     hablar(
-      "Perfecto, se lo dejo así. " +
-      "Que ese guiso le quede como en casa. Hasta pronto."
+      "Perfecto, te lo dejo así. " +
+      "Que ese guiso te quede como en casa. Hasta pronto."
     );
   }
 
@@ -1146,5 +1195,8 @@
     if (estado === "ESPERA_GESTO") { arranque.focus(); }
   });
 
-  window.addEventListener("pagehide", detenerMicrofono);
+  window.addEventListener("pagehide", function () {
+    detenerMicrofono();
+    soltarPantalla();
+  });
 })();
