@@ -11,17 +11,56 @@ creada para este ejercicio.
 
 ---
 
-## Antes de publicar: lo único que hay que configurar
+## Antes de publicar: dónde quedan los números
 
-Abra `script.js` y cambie esta línea por el número real de la granja:
+El número que dicte el profesor se guarda **siempre** en el navegador de él, en
+`localStorage`. Eso no se pierde nunca, pero tampoco le llega a usted. Para que
+llegue hay que configurar un destino.
+
+### Por qué no se puede escribir directo en GitHub
+
+Una página en GitHub Pages sirve archivos y nada más. Para escribir en el
+repositorio desde el navegador haría falta un token de escritura dentro de
+`script.js`, y en un repositorio público ese token queda a la vista de
+cualquiera: podrían borrar todo el repositorio. GitHub además detecta los
+tokens filtrados y los revoca solo, así que ni siquiera funcionaría por mucho
+tiempo.
+
+La solución es un intermediario que guarde el token del lado del servidor.
+
+### El intermediario (unos cinco minutos, gratis)
+
+En [`tools/registro-apps-script.gs`](tools/registro-apps-script.gs) está el
+código listo para pegar, con el paso a paso completo en su encabezado. Resumen:
+
+1. Cree una hoja de cálculo en Google Sheets.
+2. Extensiones → Apps Script, y pegue el archivo.
+3. Genere un token de GitHub restringido a este repositorio, con permiso
+   **Contents: Read and write** y nada más.
+4. Guarde el token en Propiedades de la secuencia de comandos, como
+   `GITHUB_TOKEN`.
+5. Implemente como aplicación web con acceso "Cualquier usuario", y copie la
+   URL que termina en `/exec`.
+6. Pegue esa URL en `script.js`, en la constante `ENDPOINT_REGISTRO`.
+
+Desde ahí, cada número aparece en dos lugares:
+
+- la **hoja de cálculo**, con fecha, dispositivo y origen;
+- el archivo **`registros.json`** de este repositorio, que se puede abrir desde
+  GitHub y leer de un vistazo.
+
+Si la escritura en GitHub falla por lo que sea, la hoja ya quedó grabada. Y si
+falla todo, la copia en el navegador del usuario sigue ahí:
 
 ```js
-var NUMERO_WHATSAPP = "573001234567";
+JSON.parse(localStorage.getItem("tierrafresca.registros"))
 ```
 
-Formato: indicativo de país y número, **solo dígitos, sin `+`, sin espacios, sin
-guiones**. Colombia es `57`. Si el número queda mal, la página no salta a
-WhatsApp: avisa en voz alta que falta configurarlo, en vez de abrir un chat roto.
+### Cierre por WhatsApp (desactivado)
+
+La campaña cierra registrando el número y avisando que un aliado se comunica.
+Si quisiera volver al cierre por WhatsApp, ponga `ABRIR_WHATSAPP_AL_CONFIRMAR`
+en `true` y llene `NUMERO_WHATSAPP` en `script.js`.
 
 ---
 
@@ -40,14 +79,17 @@ WhatsApp: avisa en voz alta que falta configurarlo, en vez de abrir un chat roto
    nuevamente?»** Reconocimiento de voz para **sí** o **no**.
 7. Si dice **no**, pregunta: **«¿Desea contactar a Tierra Fresca?»**
    - Si dice **no**, agradece y se despide. Fin.
-   - Si dice **sí**, le pide el celular **un número a la vez**, y le repite cada
-     dígito apenas lo captura.
-8. Con el número completo se lo lee de vuelta y pide confirmación. Si confirma,
-   abre WhatsApp con el mensaje ya escrito.
+   - Si dice **sí**, le pide el celular **completo, de corrido**. No lo
+     interrumpe: escucha hasta que termine de hablar.
+8. Le lee el número de vuelta, en grupos de tres, y le da tres salidas:
+   **sí** confirma, **no** lo borra entero y vuelve a empezar, y **«repítalo»**
+   se lo lee otra vez sin tocarlo.
+9. Al confirmar: *«Su número ya quedó registrado. Uno de nuestros aliados se va
+   a comunicar con usted para coordinar su envío.»*
 
 En cada paso hay un camino alterno por teclado: cualquier tecla para arrancar,
-`S` para sí, `N` para no, las teclas numéricas para el celular, `Retroceso` para
-corregir.
+`S` para sí, `N` para no, `R` para que le repita el número, las teclas numéricas
+para el celular, `Enter` para dar por terminado el dictado.
 
 ## Máquina de estados
 
@@ -60,9 +102,15 @@ ESPERA_GESTO ──gesto──> REPRODUCIENDO ──fin del audio──> PREGUNT
                             FIN <─── no ─── PREGUNTA_CONTACTO ──┘
                                                  │ sí
                                                  v
-                            CAPTURA_NUMERO ──> CONFIRMA_NUMERO ──sí──> WhatsApp
-                                 ^                    │ no
-                                 └────────────────────┘
+                                          CAPTURA_NUMERO
+                                                 │ silencio, o 10 dígitos
+                                                 v
+                            no ──> CONFIRMA_NUMERO <──┐
+                            (borra)  │      │  repítalo
+                                     │      └─────────┘
+                                     │ sí
+                                     v
+                              registro + despedida
 ```
 
 ## Estructura
@@ -78,6 +126,9 @@ email/correo-outlook.html           el correo listo para enviar
 email/INSTRUCCIONES-ENVIO.md        cómo enviarlo y por qué así
 tools/generar_pdf.py                regenera el PDF (1 párrafo, 10 líneas)
 tools/generar_fondo.py              regenera el fondo
+tools/registro-apps-script.gs       intermediario que guarda los números
+registros.json                      los números registrados (lo escribe el
+                                    intermediario, no se edita a mano)
 ```
 
 Para regenerar los archivos derivados:
@@ -145,22 +196,47 @@ intentos fallidos ofrece el camino por teclado en vez de seguir insistiendo.
 Es preferible una pregunta de más que saltar a WhatsApp sin que el usuario lo
 haya pedido.
 
-### La captura del celular repite cada dígito
+### El celular se dicta completo, sin interrupciones
 
-Cuesta un segundo por dígito, pero es la diferencia entre corregir sobre la
-marcha y descubrir al final que el número completo quedó mal. El reconocedor
-devuelve tanto palabras (*«tres»*) como cifras agrupadas (*«315»*, *«treinta»*);
-todo se descompone a dígitos sueltos. Decir *«borrar»* elimina el último.
+La primera versión repetía cada dígito apenas lo capturaba. Sonaba atento, pero
+estaba roto de raíz: repetir obliga a apagar el micrófono para hablar y a
+encenderlo de nuevo después, y ese vaivén partía en pedazos cualquier número
+dicho de corrido. Se perdían dígitos en cada corte.
 
-Al final se lee el número completo, separado por comas para que la voz lo dicte
-dígito por dígito y no como una cifra de mil millones.
+Ahora el micrófono queda abierto de principio a fin. La página no dice nada
+mientras el usuario dicta. Cuando pasan cuatro segundos y medio de silencio, o
+cuando llegan los diez dígitos, se da por terminado.
 
-### Qué pasa con el número capturado
+El reconocedor devuelve tanto palabras (*«tres»*) como cifras agrupadas
+(*«315»*, *«treinta»*); todo se descompone a dígitos sueltos.
 
-GitHub Pages sirve archivos: no puede guardar datos. Por eso, al confirmar, la
-página abre WhatsApp con el mensaje ya escrito, que es lo único que convierte el
-número dictado en una conversación real. Se puede desactivar con la constante
-`ABRIR_WHATSAPP_AL_CONFIRMAR`; en ese caso la página sólo agradece.
+### La confirmación tiene tres salidas, no dos
+
+Un número de diez cifras no siempre se retiene a la primera. Con sólo sí y no,
+quien no alcanzó a oírlo tendría que decir *«no»* y dictarlo entero otra vez,
+sin ninguna necesidad. Por eso hay un tercer comando: **«repítalo»** (tecla `R`),
+que lo vuelve a leer sin tocarlo.
+
+Y **«no» borra el número completo**, no un dígito. Se lo dice explícitamente —
+*«lo borré por completo»* — para que no quede con la duda de si algo se guardó a
+medias.
+
+La lectura de vuelta va en grupos de tres, con una pausa entre grupos: 315. 888.
+4433. Diez dígitos separados sólo por comas son una lista imposible de seguir de
+oído; agrupados se retienen como un número. Un grupo final de un solo dígito se
+absorbe en el anterior, porque *«cuatro, cuatro, tres... tres»* suena a error de
+la máquina.
+
+### Dónde queda el número
+
+Siempre en `localStorage`, en el navegador del usuario: es la copia que no
+depende de la red ni de que el intermediario esté bien configurado.
+
+Y, si `ENDPOINT_REGISTRO` está configurado, también en la hoja de cálculo y en
+`registros.json`. Ese envío va en modo `no-cors`, porque una aplicación web de
+Apps Script no devuelve cabeceras CORS: la petición sale, pero el navegador no
+deja leer la respuesta. Por eso no se puede confirmar la entrega desde la
+página, y por eso la copia local no es opcional.
 
 ### Voz sintética y micrófono nunca funcionan al mismo tiempo
 
@@ -170,19 +246,34 @@ solo entonces enciende el micrófono. Lo mismo al reproducir el audio ASMR.
 
 ### La voz guía habla español, o se calla
 
-`speechSynthesis` usa `lang = "es-CO"` y busca una voz española en tres rondas:
-español de América, cualquier variante de español, y por último por nombre de
-voz.
+Cada voz disponible se puntúa para quedarse con la más humana de las que hablen
+español. Las voces neuronales (*Natural*, *Neural*) y las que se sintetizan en
+servidor (*Online*, las de Google) suenan muchísimo mejor que las locales
+clásicas de Windows, que arrastran la cadencia metálica de SAPI. Una voz que no
+hable español queda descartada de entrada.
 
-**Si el equipo no tiene ninguna voz española instalada**, la página *no*
-sintetiza: una voz inglesa leyendo español suena a ruido y se entiende peor que
-el silencio. En ese caso deja el mensaje en la región `aria-live` y lo narra el
-lector de pantalla del propio usuario, que sí está en español y a su velocidad
-de siempre.
+**Si el equipo no tiene ninguna voz española instalada, la página no sintetiza.**
+Una voz inglesa leyendo español se entiende peor que el silencio. En ese caso
+deja el mensaje en la región `aria-live` y lo narra el lector de pantalla del
+propio usuario, que sí está en español y a su velocidad de siempre.
 
 Para instalar voces en español en Windows:
 **Configuración → Hora e idioma → Voz → Administrar voces → Agregar voces →
 Español**.
+
+### El segundo en blanco antes de cada frase
+
+La salida de audio del sistema se duerme cuando lleva un rato en silencio, y al
+despertar se come los primeros 200 a 400 milisegundos: la primera sílaba de cada
+frase se perdía.
+
+Antes de hablar, la página manda un segundo de silencio real por WebAudio. El
+buffer no es silencio absoluto sino una amplitud mínima e inaudible, porque
+algunos controladores detectan el silencio puro y apagan el canal igual, que es
+justo lo que se quiere evitar. Cuando entra la voz, el dispositivo ya está
+abierto.
+
+Se ajusta con la constante `SILENCIO_INICIAL_MS`.
 
 ### La descarga del PDF
 
@@ -218,22 +309,38 @@ pierde: va por voz y por lector de pantalla.
 
 ## Pruebas hechas
 
-Verificadas en navegador, con el micrófono bloqueado para forzar el camino de
-contingencia:
+Verificadas en navegador, con el micrófono bloqueado a propósito para forzar el
+camino de contingencia por teclado:
 
-- Cadena completa: gesto de teclado → audio → *«¿Desea reproducir nuevamente?»* →
-  *no* → *«¿Desea contactar a Tierra Fresca?»* → *sí* → captura de diez dígitos →
-  lectura de vuelta y confirmación.
-- Camino de micrófono denegado: la página avisa una vez y el teclado toma el
-  relevo sin perder el estado.
+- Cadena completa: gesto → audio → *«¿Desea reproducir nuevamente?»* → **no** →
+  *«¿Desea contactar a Tierra Fresca?»* → **sí** → diez dígitos de corrido →
+  lectura de vuelta agrupada → **repítalo** → **sí** → mensaje de registro.
+- El número queda en `localStorage` y la URL no cambia: no hay salto a WhatsApp.
+- Rama de despedida (**no** en la pregunta de contacto).
 - Interpretación de sí/no, once casos: *«claro que sí»* → sí, *«no gracias»* →
-  no, *«nunca»* → no, *«no, sí»* → ambiguo, vuelve a preguntar.
-- Extracción de dígitos, diez casos: palabras sueltas (*«tres»*), cifras
-  agrupadas (*«315»*), compuestos (*«treinta»*, *«veintitrés»*), ruido
-  (*«ehh... siete»* → 7) y frases sin números (→ vacío).
+  no, *«nunca»* → no, *«no, sí»* → ambiguo y vuelve a preguntar.
+- Extracción de dígitos: palabras sueltas, cifras agrupadas (*«315»*),
+  compuestos (*«treinta»*, *«veintitrés»*), ruido (*«ehh... siete»* → 7), y
+  frases sin números (→ vacío). Un celular dicho de corrido de las cinco formas
+  probadas devuelve los diez dígitos correctos.
+- Agrupación de la lectura: `3158884433` → *«3, 1, 5. 8, 8, 8. 4, 4, 3, 3»*, sin
+  grupos finales de un solo dígito.
+- Puntuación de voces contra una lista simulada: gana *Microsoft Salomé Online
+  (Natural)* sobre *Google español*, sobre *Sabina* local, sobre *Helena*, y las
+  voces en inglés quedan descartadas.
 - PDF: una página, un párrafo, diez líneas exactas, texto extraíble en orden de
   lectura.
 - Pantalla: vacía. Sólo el fondo desenfocado, sin texto visible.
 
+Dos fallos reales que salieron de estas pruebas y ya están corregidos:
+
+- `ENDPOINT_REGISTRO` no estaba declarada, y el `ReferenceError` reventaba
+  dentro de `registrar()` justo antes del mensaje de cierre: el número se
+  guardaba, pero el usuario nunca oía que había quedado registrado.
+- Un error tardío del micrófono podía llegar con la conversación ya cerrada y
+  pisar ese mismo mensaje de cierre con el aviso del teclado.
+
 Sin probar todavía, porque necesita un equipo con micrófono y voz española
-instalada: el reconocimiento de voz real y la síntesis en español.
+instalada: el reconocimiento de voz real y la síntesis en español. En este
+equipo no hay ninguna voz española instalada, así que la degradación por
+`aria-live` es la que quedó ejercitada.

@@ -11,23 +11,27 @@
      REPRODUCIENDO     Suena el audio ASMR de un minuto.
      PREGUNTA_REPETIR  "Desea reproducir nuevamente?"  ->  si / no
      PREGUNTA_CONTACTO "Desea contactar a Tierra Fresca?"  ->  si / no
-     CAPTURA_NUMERO    Dicta el celular, un digito a la vez.
-     CONFIRMA_NUMERO   Se le repite el numero completo.  ->  si / no
-     FIN               Despedida.
+     CAPTURA_NUMERO    Dicta el celular completo, de corrido.
+     CONFIRMA_NUMERO   Se le repite el numero digito por digito.  ->  si / no
+     FIN               Confirmacion de registro y despedida.
 
-   TRES REGLAS QUE SOSTIENEN TODO EL ARCHIVO
-   -----------------------------------------
+   CUATRO REGLAS QUE SOSTIENEN TODO EL ARCHIVO
+   -------------------------------------------
    1. La voz y el microfono NUNCA estan encendidos a la vez. Si lo estuvieran,
-      la pagina se oiria a si misma: al repetir el digito "tres" lo volveria a
-      capturar como un tres nuevo. Cada pregunta es: apagar microfono, hablar,
+      la pagina se oiria a si misma. Cada turno es: apagar microfono, hablar,
       esperar el onend, encender microfono.
 
-   2. Todo comando de voz tiene gemelo por teclado. SpeechRecognition no existe
+   2. Durante el dictado del celular la pagina NO interrumpe. El microfono se
+      queda abierto de principio a fin. Repetir cada digito obligaba a apagar
+      y encender el microfono entre numero y numero, y eso partia en pedazos
+      cualquier numero dicho de corrido. Se confirma una sola vez, al final.
+
+   3. Todo comando de voz tiene gemelo por teclado. SpeechRecognition no existe
       en Firefox y el permiso de microfono se puede negar. Como en pantalla no
       hay botones, el respaldo es el teclado: S para si, N para no, las teclas
       numericas para el celular.
 
-   3. Si no hay voz espanola instalada, la pagina no sintetiza. Una voz inglesa
+   4. Si no hay voz espanola instalada, la pagina no sintetiza. Una voz inglesa
       leyendo espanol se entiende peor que el silencio. En ese caso el mensaje
       viaja por la region aria-live y lo narra el lector de pantalla del propio
       usuario, que si esta en espanol.
@@ -40,22 +44,51 @@
      CONFIGURACION
      ===================================================================== */
 
-  // Numero de WhatsApp de la granja: indicativo de pais + numero, solo
-  // digitos. Colombia es 57. Ejemplo: "573001234567".
-  var NUMERO_WHATSAPP = "573001234567";
+  // Segundo en blanco antes de cada frase.
+  //
+  // No es un capricho de ritmo: la salida de audio del sistema se duerme
+  // cuando lleva un rato en silencio, y al despertar se come los primeros
+  // 200 a 400 milisegundos de la frase. Por eso se le manda primero un
+  // silencio real por WebAudio (para despertar el dispositivo) y solo
+  // despues se habla. El usuario oye la frase completa, desde la primera
+  // silaba.
+  var SILENCIO_INICIAL_MS = 1000;
 
+  // Cierre de la conversacion. La campana termina registrando el numero y
+  // avisando que un aliado se comunica: no salta a WhatsApp.
+  //
+  // Si algun dia se quiere volver al cierre por WhatsApp, poner esto en true
+  // y llenar NUMERO_WHATSAPP. Es la unica forma de que el numero dictado no
+  // se pierda: GitHub Pages sirve archivos, no puede guardar datos.
+  var ABRIR_WHATSAPP_AL_CONFIRMAR = false;
+  var NUMERO_WHATSAPP = "573001234567";
   var MENSAJE_WHATSAPP =
     "Hola, soy Carlos y recibí tu correo, me gustaría participar en la " +
     "campaña de su granja de tomates para guiso. Esperamos podamos hablar " +
     "por este medio para coordinar todo.";
 
-  // Al confirmar el celular, la pagina abre WhatsApp para que la conversacion
-  // quede iniciada de verdad. Se puede apagar: en ese caso solo agradece.
-  // Sin servidor propio, esta es la unica forma de que el numero dictado no
-  // se pierda: GitHub Pages sirve archivos, no puede guardar datos.
-  var ABRIR_WHATSAPP_AL_CONFIRMAR = true;
+  // A donde se manda el numero para quedar registrado.
+  //
+  // Una pagina estatica NO puede escribir en GitHub por si sola: haria falta
+  // un token de escritura dentro de este archivo, que en un repositorio
+  // publico queda a la vista de cualquiera. GitHub ademas detecta los tokens
+  // filtrados y los revoca solo, asi que ni siquiera duraria.
+  //
+  // Por eso el registro pasa por un intermediario que guarda el token del
+  // lado del servidor. En tools/registro-apps-script.gs esta el codigo listo
+  // para pegar, y en el README el paso a paso para desplegarlo.
+  //
+  // Mientras esto este vacio, el numero se guarda unicamente en el navegador
+  // del usuario. No se pierde, pero tampoco le llega a la granja.
+  var ENDPOINT_REGISTRO = "";
 
   var DIGITOS_CELULAR = 10;   // Colombia: 10 digitos
+  var MINIMO_DIGITOS  = 7;
+
+  // Silencio tras el cual se da por terminado el dictado del numero, si ya
+  // hay digitos suficientes. Es lo que permite decir el celular de corrido
+  // sin tener que anunciar que uno termino.
+  var PAUSA_FIN_DICTADO_MS = 4500;
 
   /* =====================================================================
      Elementos y capacidades del navegador
@@ -77,6 +110,7 @@
   var estado           = "ESPERA_GESTO";
   var digitos          = [];
   var reintentos       = 0;
+  var relojDictado     = null;
 
   function esMovil() {
     if (navigator.userAgentData && typeof navigator.userAgentData.mobile === "boolean") {
@@ -97,28 +131,77 @@
   }
 
   /* =====================================================================
+     Despertar la salida de audio
+     ===================================================================== */
+
+  var contexto = null;
+
+  // Reproduce un silencio real por WebAudio para que el dispositivo de salida
+  // este despierto cuando entre la voz.
+  //
+  // El buffer no es silencio absoluto sino una amplitud minima e inaudible:
+  // algunos controladores de audio detectan el silencio puro y apagan el
+  // canal igual, que es justo lo que se quiere evitar.
+  function despertarSalida() {
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) { return; }
+      if (!contexto) { contexto = new AC(); }
+      if (contexto.state === "suspended") { contexto.resume(); }
+
+      var muestras = Math.ceil(contexto.sampleRate * (SILENCIO_INICIAL_MS / 1000));
+      var buffer = contexto.createBuffer(1, muestras, contexto.sampleRate);
+      var datos = buffer.getChannelData(0);
+      var i;
+      for (i = 0; i < muestras; i++) {
+        datos[i] = (i % 2 ? 1 : -1) * 0.0001;   // inaudible, pero no es cero
+      }
+
+      var fuente = contexto.createBufferSource();
+      fuente.buffer = buffer;
+      fuente.connect(contexto.destination);
+      fuente.start();
+    } catch (e) { /* sin efecto: se pierde el respiro, no la frase */ }
+  }
+
+  /* =====================================================================
      Voz de la pagina
      ===================================================================== */
 
-  // Se busca voz espanola en tres rondas, de la mas deseable a la mas
-  // tolerante: espanol de America, cualquier espanol, y por nombre de voz.
+  // Se puntua cada voz para quedarse con la mas humana de las que hablen
+  // espanol. Las voces neuronales ("Natural", "Neural") y las que se sintetizan
+  // en servidor ("Online", las de Google) suenan muchisimo mas naturales que
+  // las locales clasicas de Windows, que arrastran la cadencia metalica de
+  // SAPI. Una voz que no hable espanol queda descartada de entrada.
+  function puntuarVoz(v) {
+    var lang = v.lang || "";
+    var nombre = v.name || "";
+    var p;
+
+    if (/^es[-_]?(CO|MX|US|AR|CL|PE|419)/i.test(lang)) { p = 40; }      // espanol de America
+    else if (/^es($|[-_])/i.test(lang)) { p = 25; }                     // cualquier espanol
+    else if (/spanish|espanol|español/i.test(nombre)) { p = 10; }       // el motor reporta mal el idioma
+    else { return -1; }
+
+    if (/natural|neural/i.test(nombre)) { p += 30; }
+    if (/^google/i.test(nombre)) { p += 20; }
+    if (/online/i.test(nombre)) { p += 15; }
+    if (v.localService === false) { p += 10; }
+
+    return p;
+  }
+
   function vozEspanol() {
     if (!TTS) { return null; }
     var voces = TTS.getVoices() || [];
-    var i, n;
+    var mejor = null;
+    var mejorPuntaje = 0;
+    var i, p;
     for (i = 0; i < voces.length; i++) {
-      if (/^es[-_]?(CO|MX|US|AR|CL|PE|419)/i.test(voces[i].lang)) { return voces[i]; }
+      p = puntuarVoz(voces[i]);
+      if (p > mejorPuntaje) { mejorPuntaje = p; mejor = voces[i]; }
     }
-    for (i = 0; i < voces.length; i++) {
-      if (/^es($|[-_])/i.test(voces[i].lang)) { return voces[i]; }
-    }
-    for (i = 0; i < voces.length; i++) {
-      n = voces[i].name || "";
-      if (/spanish|espanol|español|helena|sabina|laura|jorge|monica|mónica|paulina|raul|raúl|diego|elvira/i.test(n)) {
-        return voces[i];
-      }
-    }
-    return null;
+    return mejor;
   }
 
   // Chrome devuelve getVoices() vacio en la primera llamada y avisa despues
@@ -151,19 +234,20 @@
     return Math.min(20000, 1400 + texto.length * 58);
   }
 
-  // hablar(texto, despues): apaga el microfono, dice el texto en espanol y
-  // solo entonces ejecuta "despues". Es el unico punto del archivo donde se
-  // sintetiza voz, para que la regla de no solaparse con el microfono no
-  // dependa de acordarse de aplicarla en cada sitio.
+  // hablar(texto, despues): apaga el microfono, deja pasar el segundo en
+  // blanco, dice el texto en espanol y solo entonces ejecuta "despues". Es el
+  // unico punto del archivo donde se sintetiza voz, para que las reglas 1 y 2
+  // del encabezado no dependan de acordarse de aplicarlas en cada sitio.
   function hablar(texto, despues) {
     detenerMicrofono();
     anunciar(texto);
+    despertarSalida();
 
     function seguir() { if (despues) { despues(); } }
 
     if (!TTS || typeof window.SpeechSynthesisUtterance !== "function") {
       // Sin sintesis: el lector de pantalla ya recibio el texto por aria-live.
-      window.setTimeout(seguir, tiempoDeLectura(texto));
+      window.setTimeout(seguir, SILENCIO_INICIAL_MS + tiempoDeLectura(texto));
       return;
     }
 
@@ -171,32 +255,40 @@
 
     conVozLista(function (voz) {
       if (!voz) {
-        // Sin voz espanola no se sintetiza. Ver regla 3 del encabezado.
-        window.setTimeout(seguir, tiempoDeLectura(texto));
+        // Sin voz espanola no se sintetiza. Ver regla 4 del encabezado.
+        window.setTimeout(seguir, SILENCIO_INICIAL_MS + tiempoDeLectura(texto));
         return;
       }
 
-      var frase = new window.SpeechSynthesisUtterance(texto);
-      frase.lang = "es-CO";
-      frase.rate = 0.96;
-      frase.pitch = 1;
-      frase.voice = voz;
+      // El segundo en blanco corre mientras el silencio de despertarSalida()
+      // esta sonando. Cuando entra la voz, el dispositivo ya esta abierto.
+      window.setTimeout(function () {
+        var frase = new window.SpeechSynthesisUtterance(texto);
+        frase.lang = "es-CO";
+        // 0.95 y 1.02: apenas por debajo de la velocidad nominal y apenas por
+        // encima del tono neutro. Es la combinacion que menos suena a maquina
+        // leyendo y mas a alguien hablando con calma.
+        frase.rate = 0.95;
+        frase.pitch = 1.02;
+        frase.volume = 1;
+        frase.voice = voz;
 
-      var listo = false;
-      function finalizar() {
-        if (listo) { return; }
-        listo = true;
-        // Respiro corto: si el microfono abre en el mismo instante en que
-        // calla la voz, alcanza a capturar la cola de la propia frase.
-        window.setTimeout(seguir, 250);
-      }
-      frase.onend = finalizar;
-      frase.onerror = finalizar;
-      // Red de seguridad: en algunos Chrome "onend" no dispara si la pestana
-      // pierde el foco. Sin esto el flujo quedaria colgado para siempre.
-      window.setTimeout(finalizar, tiempoDeLectura(texto) + 4000);
+        var listo = false;
+        function finalizar() {
+          if (listo) { return; }
+          listo = true;
+          // Respiro corto: si el microfono abre en el mismo instante en que
+          // calla la voz, alcanza a capturar la cola de la propia frase.
+          window.setTimeout(seguir, 250);
+        }
+        frase.onend = finalizar;
+        frase.onerror = finalizar;
+        // Red de seguridad: en algunos Chrome "onend" no dispara si la pestana
+        // pierde el foco. Sin esto el flujo quedaria colgado para siempre.
+        window.setTimeout(finalizar, tiempoDeLectura(texto) + 4000);
 
-      TTS.speak(frase);
+        TTS.speak(frase);
+      }, SILENCIO_INICIAL_MS);
     });
   }
 
@@ -215,11 +307,10 @@
   }
 
   var PATRON_SI = /\b(si|sii|sip|claro|correcto|dale|listo|bueno|obvio|exacto|afirmativo|supuesto|hagale|ok|okey|vale|quiero|acepto)\b/;
-  var PATRON_NO = /\b(no|nop|nel|negativo|nunca|jamas|tampoco)\b/;
+  var PATRON_NO = /\b(no|nop|nel|negativo|nunca|jamas|tampoco|incorrecto|equivocado)\b/;
 
   // Devuelve "si", "no" o null. Si la frase contiene ambas cosas, o ninguna,
-  // devuelve null: es preferible volver a preguntar que adivinar mal y saltar
-  // a WhatsApp sin que el usuario lo haya pedido.
+  // devuelve null: es preferible volver a preguntar que adivinar mal.
   function interpretarSiNo(texto) {
     var t = normalizar(texto);
     var si = PATRON_SI.test(t);
@@ -236,8 +327,9 @@
     seis: "6", siete: "7", ocho: "8", nueve: "9"
   };
 
-  // El motor a veces agrupa: "tres uno cinco" puede volver como "315", y
-  // "treinta" como palabra. Se descompone todo a digitos sueltos.
+  // Diciendo el celular de corrido, el motor casi nunca devuelve digitos
+  // sueltos: agrupa. "tres cero cero" puede volver como "300", y "treinta y
+  // uno" como "31". Todo se descompone a digitos sueltos.
   var COMPUESTOS = {
     diez: "10", once: "11", doce: "12", trece: "13", catorce: "14",
     quince: "15", dieciseis: "16", diecisiete: "17", dieciocho: "18",
@@ -246,7 +338,10 @@
     veintiseis: "26", veintisiete: "27", veintiocho: "28",
     veintinueve: "29", treinta: "30", cuarenta: "40", cincuenta: "50",
     sesenta: "60", setenta: "70", ochenta: "80", noventa: "90",
-    cien: "100", ciento: "100"
+    cien: "100", ciento: "100", doscientos: "200", trescientos: "300",
+    cuatrocientos: "400", quinientos: "500", seiscientos: "600",
+    setecientos: "700", ochocientos: "800", novecientos: "900",
+    mil: "1000"
   };
 
   function extraerDigitos(texto) {
@@ -255,7 +350,7 @@
     var i, j, p, v;
     for (i = 0; i < partes.length; i++) {
       p = partes[i];
-      if (!p) { continue; }
+      if (!p || p === "y") { continue; }          // "treinta y uno"
       if (/^\d+$/.test(p)) { v = p; }
       else if (UNIDADES.hasOwnProperty(p)) { v = UNIDADES[p]; }
       else if (COMPUESTOS.hasOwnProperty(p)) { v = COMPUESTOS[p]; }
@@ -265,8 +360,34 @@
     return salida;
   }
 
-  var PATRON_BORRAR = /\b(borrar|borra|borre|corregir|corrige|atras|eliminar|quitar|equivoque|error)\b/;
-  var PATRON_LISTO  = /\b(termine|termina|es todo|nada mas|ya esta|fin)\b/;
+  var PATRON_BORRAR = /\b(borrar|borra|borre|corregir|corrige|empezar de nuevo|eliminar|equivoque|error)\b/;
+  // En la confirmacion se admite un tercer comando ademas de si y no: pedir
+  // que se lo repitan. Un numero de diez digitos dicho de corrido no siempre
+  // se retiene a la primera, y obligar a decir "no" para volver a oirlo
+  // significaria borrarlo y dictarlo entero otra vez sin ninguna necesidad.
+  var PATRON_REPETIR = /\b(repita|repitalo|repitamelo|repetir|otra vez|de nuevo|no escuche|no oi|no entendi)\b/;
+  var PATRON_LISTO  = /\b(listo|ya|termine|termina|es todo|nada mas|ya esta|fin)\b/;
+
+  // Lee los digitos de a uno, con una pausa mas larga cada tres. De corrido,
+  // diez digitos separados solo por comas se vuelven una lista imposible de
+  // seguir de oido; agrupados de tres en tres se retienen como un numero.
+  function leerDigitos(lista) {
+    var grupos = [];
+    var i;
+    for (i = 0; i < lista.length; i += 3) {
+      grupos.push(lista.slice(i, i + 3));
+    }
+    // Un grupo final de un solo digito suena a error de la maquina ("cuatro,
+    // cuatro, tres... tres"). Se absorbe en el grupo anterior, que es como
+    // cualquiera dictaria un celular de diez cifras: 315, 888, 4433.
+    if (grupos.length > 1 && grupos[grupos.length - 1].length < 2) {
+      var ultimo = grupos.pop();
+      grupos[grupos.length - 1] = grupos[grupos.length - 1].concat(ultimo);
+    }
+    var textos = [];
+    for (i = 0; i < grupos.length; i++) { textos.push(grupos[i].join(", ")); }
+    return textos.join(". ");
+  }
 
   function detenerMicrofono() {
     queremosEscuchar = false;
@@ -278,6 +399,7 @@
   // manejador, que devuelve true cuando ya proceso la frase. Si el microfono
   // no esta disponible, avisa una sola vez y el teclado queda como unica via.
   function escuchar(manejador) {
+    if (estado === "FIN") { return; }
     alEscuchar = manejador;
 
     if (!SR) { avisarSoloTeclado(); return; }
@@ -335,11 +457,17 @@
   var yaAvisoTeclado = false;
   function avisarSoloTeclado() {
     if (yaAvisoTeclado) { return; }
+    // El error del microfono llega de forma asincrona y puede aparecer cuando
+    // la conversacion ya termino. Sin esta guarda, el aviso del teclado le
+    // pisaba al usuario el mensaje de cierre, que es el que de verdad
+    // importa: el que le dice que su numero quedo registrado.
+    if (estado === "FIN") { return; }
     yaAvisoTeclado = true;
     hablar(
       "No puedo usar el micrófono, así que vamos por el teclado. " +
       "Presione la tecla ese para decir sí, y la tecla ene para decir no. " +
-      "Cuando le pida su celular, márquelo con las teclas de números."
+      "Cuando le pida su celular, márquelo con las teclas de números. " +
+      "Y si quiere que le repita el número, presione la tecla erre."
     );
   }
 
@@ -363,12 +491,18 @@
         estado === "CONFIRMA_NUMERO") {
       if (/^[sS]$/.test(k)) { e.preventDefault(); resolverSiNo("si"); }
       else if (/^[nN]$/.test(k)) { e.preventDefault(); resolverSiNo("no"); }
+      // Erre de "repítalo": gemelo por teclado del comando de voz que vuelve
+      // a leer el numero sin borrarlo. Solo tiene sentido en la confirmacion.
+      else if (/^[rR]$/.test(k) && estado === "CONFIRMA_NUMERO") {
+        e.preventDefault();
+        repetirNumero();
+      }
       return;
     }
 
     if (estado === "CAPTURA_NUMERO") {
-      if (/^[0-9]$/.test(k)) { e.preventDefault(); agregarDigitos([k], true); }
-      else if (k === "Backspace") { e.preventDefault(); borrarUltimoDigito(); }
+      if (/^[0-9]$/.test(k)) { e.preventDefault(); agregarDigitos([k]); }
+      else if (k === "Backspace") { e.preventDefault(); reiniciarNumero(); }
       else if (k === "Enter") { e.preventDefault(); cerrarCaptura(); }
     }
   });
@@ -447,11 +581,15 @@
     if (TTS && typeof window.SpeechSynthesisUtterance === "function") {
       conVozLista(function (voz) {
         if (!voz || estado !== "ESPERA_GESTO") { return; }
-        var f = new window.SpeechSynthesisUtterance(texto);
-        f.lang = "es-CO";
-        f.voice = voz;
-        f.rate = 0.96;
-        try { TTS.speak(f); } catch (e) { /* sin efecto */ }
+        window.setTimeout(function () {
+          if (estado !== "ESPERA_GESTO") { return; }
+          var f = new window.SpeechSynthesisUtterance(texto);
+          f.lang = "es-CO";
+          f.voice = voz;
+          f.rate = 0.95;
+          f.pitch = 1.02;
+          try { TTS.speak(f); } catch (e) { /* sin efecto */ }
+        }, SILENCIO_INICIAL_MS);
       });
     }
   }
@@ -461,8 +599,10 @@
     yaArranco = true;
     if (TTS) { TTS.cancel(); }
 
-    // Segundo intento de descarga, ahora si con un gesto del usuario detras:
-    // Chrome bloquea descargas automaticas en pestanas que no han recibido uno.
+    // Con un gesto del usuario ya confirmado se puede despertar el audio y
+    // reintentar la descarga: Chrome bloquea descargas automaticas en
+    // pestanas que todavia no han recibido ninguno.
+    despertarSalida();
     descargarPdf();
 
     arranque.setAttribute("aria-label", "Reproduciendo.");
@@ -511,7 +651,7 @@
     estado = "PREGUNTA_REPETIR";
     reintentos = 0;
     hablar(
-      "¿Desea reproducir la experiencia nuevamente? Responda sí o no.",
+      "¿Desea reproducir la experiencia nuevamente? Responda sí, o no.",
       function () { escuchar(oirSiNo); }
     );
   }
@@ -524,7 +664,7 @@
     estado = "PREGUNTA_CONTACTO";
     reintentos = 0;
     hablar(
-      "¿Desea contactar a Tierra Fresca? Responda sí o no.",
+      "¿Desea contactar a Tierra Fresca? Responda sí, o no.",
       function () { escuchar(oirSiNo); }
     );
   }
@@ -532,6 +672,7 @@
   // Manejador de escucha compartido por los tres estados de pregunta cerrada.
   function oirSiNo(frase) {
     var r = interpretarSiNo(frase);
+    var enConfirmacion = (estado === "CONFIRMA_NUMERO");
     if (!r) {
       reintentos++;
       if (reintentos >= 3) {
@@ -541,7 +682,7 @@
           "No logro entenderle, y la culpa es mía, no suya. " +
           "Si está en un computador, presione la tecla ese para sí, " +
           "o la tecla ene para no.",
-          function () { escuchar(oirSiNo); }
+          function () { escuchar(enConfirmacion ? oirConfirmacion : oirSiNo); }
         );
       }
       return false;
@@ -567,16 +708,19 @@
     }
 
     if (estado === "CONFIRMA_NUMERO") {
-      if (r === "si") { cerrarConversion(); }
+      if (r === "si") { registrar(); }
       else {
-        digitos = [];
-        hablar("Sin problema, empecemos de nuevo.", pedirNumero);
+        // "No" borra el numero entero y vuelve a empezar. Se le dice
+        // explicitamente que se borro, para que no quede con la duda de si
+        // algo se guardo a medias.
+        hablar("Listo, lo borré por completo. Empezamos otra vez, sin afán.",
+               pedirNumero);
       }
     }
   }
 
   /* =====================================================================
-     ESTADO 5 — Captura del celular, digito por digito
+     ESTADO 5 — Captura del celular, completo y de corrido
      ===================================================================== */
 
   function pedirNumero() {
@@ -584,29 +728,31 @@
     digitos = [];
     reintentos = 0;
     hablar(
-      "Qué alegría. Por favor indíqueme su número de celular, " +
-      "un número a la vez. Yo le voy repitiendo cada uno. " +
-      "Si se equivoca, diga: borrar.",
-      function () { escuchar(oirDigitos); }
+      "Qué alegría. Por favor dígame su número de celular completo, " +
+      "de corrido y con calma. Yo se lo repito al final para que usted " +
+      "me confirme que quedó bien.",
+      function () {
+        escuchar(oirNumero);
+        esperarFinDelDictado();
+      }
     );
   }
 
-  function oirDigitos(frase) {
+  // No se interrumpe al usuario mientras dicta: el microfono queda abierto de
+  // principio a fin. Ver regla 2 del encabezado.
+  function oirNumero(frase) {
     var t = normalizar(frase);
 
-    if (PATRON_BORRAR.test(t)) { borrarUltimoDigito(); return true; }
+    if (PATRON_BORRAR.test(t)) { reiniciarNumero(); return true; }
 
     var nuevos = extraerDigitos(frase);
-    if (nuevos.length) { agregarDigitos(nuevos, true); return true; }
+    if (nuevos.length) { agregarDigitos(nuevos); return true; }
 
     if (PATRON_LISTO.test(t)) { cerrarCaptura(); return true; }
     return false;
   }
 
-  // Se repite cada digito en voz alta apenas se captura. Cuesta un segundo por
-  // digito, pero es la diferencia entre corregir sobre la marcha y descubrir
-  // al final que el numero completo quedo mal.
-  function agregarDigitos(nuevos, repetir) {
+  function agregarDigitos(nuevos) {
     var i;
     for (i = 0; i < nuevos.length && digitos.length < DIGITOS_CELULAR; i++) {
       digitos.push(nuevos[i]);
@@ -614,27 +760,38 @@
 
     if (digitos.length >= DIGITOS_CELULAR) { cerrarCaptura(); return; }
 
-    if (repetir) {
-      hablar(nuevos.join(", "), function () { escuchar(oirDigitos); });
-    }
+    // Todavia faltan numeros: se reinicia la cuenta de silencio y se sigue
+    // escuchando, sin decir nada.
+    esperarFinDelDictado();
   }
 
-  function borrarUltimoDigito() {
-    if (!digitos.length) {
-      hablar("Todavía no hay ningún número. Dígame el primero.",
-             function () { escuchar(oirDigitos); });
-      return;
-    }
-    digitos.pop();
-    hablar("Listo, lo borré. Van " + digitos.length + ". Siga.",
-           function () { escuchar(oirDigitos); });
+  // Si el usuario deja de hablar y ya hay digitos suficientes, se da el
+  // dictado por terminado. Es lo que permite decir el celular de corrido sin
+  // tener que anunciar que uno acabo.
+  function esperarFinDelDictado() {
+    window.clearTimeout(relojDictado);
+    relojDictado = window.setTimeout(function () {
+      if (estado === "CAPTURA_NUMERO" && digitos.length >= MINIMO_DIGITOS) {
+        cerrarCaptura();
+      }
+    }, PAUSA_FIN_DICTADO_MS);
+  }
+
+  function reiniciarNumero() {
+    window.clearTimeout(relojDictado);
+    digitos = [];
+    hablar("Listo, lo borré. Dígame el número completo otra vez, por favor.",
+           function () {
+             escuchar(oirNumero);
+             esperarFinDelDictado();
+           });
   }
 
   function cerrarCaptura() {
+    window.clearTimeout(relojDictado);
     detenerMicrofono();
-    if (digitos.length < 7) {
-      hablar("Me faltan números. Por favor dígamelos de nuevo, uno a la vez.",
-             pedirNumero);
+    if (digitos.length < MINIMO_DIGITOS) {
+      hablar("Creo que me faltaron números.", pedirNumero);
       return;
     }
     confirmarNumero();
@@ -647,44 +804,117 @@
   function confirmarNumero() {
     estado = "CONFIRMA_NUMERO";
     reintentos = 0;
-    // Separado por comas para que la voz lo lea digito por digito y no como
-    // una cifra de mil millones.
     hablar(
-      "Le repito el número: " + digitos.join(", ") + ". ¿Es correcto? Responda sí o no.",
-      function () { escuchar(oirSiNo); }
+      "El número que entendí es: " + leerDigitos(digitos) + ". " +
+      "Si está correcto, diga sí. Si está mal, diga no, y lo tomamos otra vez. " +
+      "Y si prefiere que se lo repita, dígame: repítalo.",
+      function () { escuchar(oirConfirmacion); }
+    );
+  }
+
+  // Manejador propio de la confirmacion: antes de decidir si o no, atiende la
+  // peticion de repetir, que no es ninguna de las dos cosas. Se exige que la
+  // frase no traiga tambien una palabra de "si", para que "si, repitalo" no
+  // se lea como una confirmacion.
+  function oirConfirmacion(frase) {
+    var t = normalizar(frase);
+    if (PATRON_REPETIR.test(t) && !PATRON_SI.test(t)) {
+      repetirNumero();
+      return true;
+    }
+    return oirSiNo(frase);
+  }
+
+  // Vuelve a leer el numero sin tocarlo y sin salir del estado.
+  function repetirNumero() {
+    detenerMicrofono();
+    reintentos = 0;
+    hablar(
+      "Claro. Escúchelo otra vez: " + leerDigitos(digitos) + ". " +
+      "¿Está correcto? Diga sí, o no.",
+      function () { escuchar(oirConfirmacion); }
     );
   }
 
   /* =====================================================================
-     ESTADO 7 — Cierre
+     ESTADO 7 — Registro y cierre
      ===================================================================== */
 
-  function cerrarConversion() {
+  // Guarda el numero en el navegador del usuario. Es la copia que nunca
+  // falla: no depende de la red, ni de que el intermediario este bien
+  // configurado. Sirve para recuperar un registro si el envio se cayo.
+  // Se puede leer desde la consola con:
+  //     JSON.parse(localStorage.getItem("tierrafresca.registros"))
+  function guardarLocalmente(registro) {
+    try {
+      var previos = JSON.parse(localStorage.getItem("tierrafresca.registros") || "[]");
+      if (!(previos instanceof Array)) { previos = []; }
+      previos.push(registro);
+      localStorage.setItem("tierrafresca.registros", JSON.stringify(previos));
+    } catch (e) { /* modo incognito o almacenamiento lleno: no es critico */ }
+  }
+
+  // Manda el numero al intermediario, que lo escribe en la hoja de calculo y
+  // en registros.json del repositorio. Ver tools/registro-apps-script.gs.
+  //
+  // Va en modo no-cors porque una aplicacion web de Apps Script no devuelve
+  // cabeceras CORS: la peticion sale, pero el navegador no deja leer la
+  // respuesta. Por eso no se puede confirmar la entrega desde aqui, y por eso
+  // la copia en localStorage no es opcional.
+  function enviarRegistro(registro) {
+    if (!ENDPOINT_REGISTRO) { return; }
+    if (typeof window.fetch !== "function") { return; }
+    try {
+      window.fetch(ENDPOINT_REGISTRO, {
+        method: "POST",
+        mode: "no-cors",
+        // text/plain es uno de los pocos tipos que no-cors permite sin
+        // disparar una peticion de verificacion previa. Apps Script lee el
+        // cuerpo igual y lo interpreta como JSON.
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(registro)
+      })["catch"](function () { /* queda la copia local */ });
+    } catch (e) { /* queda la copia local */ }
+  }
+
+
+  function registrar() {
     estado = "FIN";
+    window.clearTimeout(relojDictado);
     detenerMicrofono();
 
-    if (!ABRIR_WHATSAPP_AL_CONFIRMAR || !/^\d{10,15}$/.test(NUMERO_WHATSAPP)) {
+    var registro = {
+      numero: digitos.join(""),
+      fecha: new Date().toISOString(),
+      dispositivo: esMovil() ? "movil" : "escritorio",
+      origen: window.location.href
+    };
+    guardarLocalmente(registro);
+    enviarRegistro(registro);
+
+    if (ABRIR_WHATSAPP_AL_CONFIRMAR && /^\d{10,15}$/.test(NUMERO_WHATSAPP)) {
+      var url = "https://wa.me/" + NUMERO_WHATSAPP +
+                "?text=" + encodeURIComponent(MENSAJE_WHATSAPP);
       hablar(
-        "Perfecto. Ya quedó registrado. Nos comunicamos con usted muy pronto. " +
-        "Gracias por regalarnos su oído."
+        "Perfecto. Le voy a abrir WhatsApp con el mensaje ya escrito, " +
+        "para que solo tenga que pulsar enviar.",
+        function () { window.location.href = url; }
       );
+      window.setTimeout(function () { window.location.href = url; }, 9000);
       return;
     }
 
-    var url = "https://wa.me/" + NUMERO_WHATSAPP +
-              "?text=" + encodeURIComponent(MENSAJE_WHATSAPP);
-
     hablar(
-      "Perfecto. Le voy a abrir WhatsApp con el mensaje ya escrito, " +
-      "para que solo tenga que pulsar enviar.",
-      function () { window.location.href = url; }
+      "Listo. Su número ya quedó registrado. " +
+      "Uno de nuestros aliados se va a comunicar con usted para coordinar " +
+      "su envío. Muchas gracias por regalarnos su tiempo, y que ese guiso " +
+      "le quede como en casa."
     );
-    // Si la sintesis no avisa que termino, se salta igual.
-    window.setTimeout(function () { window.location.href = url; }, 9000);
   }
 
   function despedirse() {
     estado = "FIN";
+    window.clearTimeout(relojDictado);
     detenerMicrofono();
     hablar(
       "Con mucho gusto. Gracias por darnos un minuto de su tiempo y de su " +
