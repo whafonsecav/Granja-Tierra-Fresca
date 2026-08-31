@@ -3,121 +3,113 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Un mensaje de la Granja Tierra Fresca</title>
+<title>Un mensaje para ti</title>
+
+<!-- Le dice al cliente de correo que la pieza sabe verse en claro y en
+     oscuro. Sin esto, Outlook y Apple Mail invierten los colores por su
+     cuenta y suelen ensuciar el boton. -->
+<meta name="color-scheme" content="light dark" />
+<meta name="supported-color-schemes" content="light dark" />
+
 <!--
   ====================================================================
   Granja Tierra Fresca — correo de campaña
 
   Destinatario: docente universitario, ciego de nacimiento, usuario
-  experto de lector de pantalla (NVDA / JAWS / VoiceOver / Narrador).
+  experto de lector de pantalla.
 
-  QUÉ ES ESTE CORREO: una línea y un botón.
+  QUÉ ES ESTE CORREO: un botón. Literalmente nada más.
 
-  No hay logo, ni firma, ni imágenes, ni pie de página con enlaces. Cuando
-  el destinatario abre el correo y presiona la tecla K (NVDA: ir al
-  siguiente enlace) o desliza en VoiceOver, solo existe un destino
-  posible. No hay nada que recorrer, nada que descartar, nada entre él y
-  la experiencia.
+  Sin encabezado, sin párrafos, sin logo, sin firma, sin imágenes, sin
+  pie de página. Un solo enlace en todo el mensaje.
 
-  La línea visible no es decoración: es el texto de vista previa. Ver el
-  comentario que la acompaña más abajo.
+  POR QUÉ NO DICE DE QUÉ SE TRATA
 
-  ------------------------------------------------------------------
-  SOBRE "QUE EL CELULAR LO LEA SOLO"
-  ------------------------------------------------------------------
-  Conviene decirlo sin rodeos: ningún cliente de correo del mundo deja
-  que un correo se reproduzca o se lea solo al abrirlo. Outlook, Gmail
-  y Mail de iOS eliminan <audio>, <script>, <iframe> y <embed> al
-  recibir el mensaje. No es algo que se pueda esquivar con un truco de
-  maquetación, y cada intento de esquivarlo sube la puntuación de spam
-  del correo, con lo cual se pierde la entrega entera.
+  Ni "tomate", ni "granja", ni "cocina". Un correo que nombra el
+  producto en la primera frase se clasifica solo como publicidad antes
+  de que el destinatario termine de oírlo, y con un lector de pantalla
+  eso ocurre en dos segundos. Lo único que promete es lo que de verdad
+  se está ofreciendo: dos minutos grabados para él.
 
-  Pero la lectura automática SÍ ocurre, solo que no la dispara el
-  correo: la dispara el lector de pantalla que el destinatario ya tiene
-  encendido. Cuando recorre su bandeja, el sistema le lee en voz alta,
-  sin que él haga nada:
+  DÓNDE ESTÁ EL GANCHO
 
-      1. el remitente,
-      2. el ASUNTO,
-      3. el TEXTO DE VISTA PREVIA (el preheader de aquí abajo).
+  En el asunto y en el botón, que son las dos únicas cosas que existen:
 
-  Ese es el autoplay real, y ya está corriendo. Por eso el trabajo de
-  este archivo no es intentar sonar: es hacer que esas dos líneas que
-  el sistema va a leer solo, sin permiso de nadie, valgan el minuto que
-  vienen a pedir. Todo lo demás sobra, y por eso no está.
+      Asunto: Tenemos un mensaje especial para ti
+      Botón:  Grabamos dos minutos pensando en ti
+
+  Las dos frases se responden entre sí, y ninguna revela nada.
+
+  SOBRE LA LECTURA AUTOMÁTICA
+
+  Ningún cliente de correo reproduce audio al abrirse: Outlook, Gmail y
+  Mail de iOS eliminan <audio>, <script> e <iframe> al recibir. Pero la
+  lectura automática SÍ ocurre, y no la dispara el correo: la dispara
+  el lector de pantalla que el destinatario ya tiene encendido, que le
+  narra remitente, asunto y vista previa mientras recorre su bandeja.
+
+  Como el correo no tiene más texto que el botón, la vista previa la
+  ocupa el texto del botón. Por eso las dos frases están escritas para
+  oírse seguidas, en ese orden.
   ====================================================================
 -->
+
 <style type="text/css">
   body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
   table { border-collapse: collapse !important; }
   body  { margin: 0 !important; padding: 0 !important; width: 100% !important; }
 
+  /* Modo oscuro. El botón conserva su rojo en los dos modos: es el único
+     elemento de la pieza y tiene que verse igual de contundente. */
+  @media (prefers-color-scheme: dark) {
+    .fondo  { background-color: #1b1b1b !important; }
+  }
+
   @media screen and (max-width: 620px) {
     .contenedor { width: 100% !important; }
     .relleno    { padding-left: 18px !important; padding-right: 18px !important; }
-    .boton      { font-size: 19px !important; padding: 24px 20px !important; }
+    .boton      { font-size: 20px !important; padding: 26px 20px !important; }
   }
 </style>
 </head>
 
-<body style="margin:0; padding:0; background-color:#f4efe6;">
+<body class="fondo" style="margin:0; padding:0; background-color:#ffffff;">
 
 <!--
-  PREHEADER. Invisible en pantalla, pero es lo primero que se narra en la
-  lista de la bandeja, justo después del asunto y antes de abrir el correo.
-  Los espacios de ancho cero del final evitan que Outlook rellene la vista
-  previa con texto del cuerpo y le quite el remate a la frase.
+  Vista previa oculta. Solo sobrevive si el correo se envía desde Outlook
+  de escritorio; en Outlook Web se pierde al copiar y pegar, y entonces la
+  vista previa pasa a ser el texto del botón. Dice lo mismo a propósito,
+  para que el resultado sea idéntico por los dos caminos.
 -->
-<div style="display:none; font-size:1px; color:#f4efe6; line-height:1px; max-height:0px; max-width:0px; opacity:0; overflow:hidden;">
-  Dos minutos de cocina real: el agua sobre la cáscara, el cuchillo en la pulpa, el aceite caliente. Un solo botón en todo el correo.
-  &#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;
+<div style="display:none; font-size:1px; color:#ffffff; line-height:1px; max-height:0px; max-width:0px; opacity:0; overflow:hidden;">
+  Grabamos dos minutos pensando en ti.
+  &#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;
 </div>
 
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4efe6;">
+<table role="presentation" class="fondo" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#ffffff;">
   <tr>
-    <td align="center" style="padding:32px 12px;">
+    <td align="center" style="padding:44px 12px;">
 
-      <table role="presentation" class="contenedor" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px; max-width:600px;">
-
-        <!--
-          UNA LINEA VISIBLE, Y SOLO UNA.
-
-          Existe por una razon practica: en Outlook Web el correo se arma
-          copiando y pegando desde el navegador, y al copiar se pierde todo lo
-          que esta oculto con display:none. El preheader de arriba no
-          sobrevive a ese viaje.
-
-          Esta linea si, porque se ve. Cumple el mismo papel: es el texto que
-          Outlook muestra en la bandeja y que el lector de pantalla narra justo
-          despues del asunto, antes de que el destinatario abra nada.
-
-          No repite el asunto: lo continua. El asunto plantea que aqui hay
-          sonido y no fotos; esta linea dice de que sonido se trata.
-        -->
-        <tr>
-          <td class="relleno" align="center" style="padding:0 30px 26px 30px; font-family:Georgia,'Times New Roman',serif; font-size:20px; line-height:31px; color:#241a10;">
-            Dos minutos de cocina real: el agua sobre la c&aacute;scara, el
-            cuchillo entrando en la pulpa, el aceite caliente. Nada de m&uacute;sica.
-          </td>
-        </tr>
-
+      <table role="presentation" class="contenedor" width="560" cellpadding="0" cellspacing="0" border="0" style="width:560px; max-width:560px;">
         <tr>
           <td class="relleno" align="center" style="padding:0 30px;">
 
             <!--
               EL BOTÓN. Un enlace real dentro de una celda con color de
-              fondo: no es una imagen y no es VML. Se ve en Outlook, se
-              alcanza con Tab, y el lector de pantalla anuncia su texto
-              completo. El texto dice a dónde lleva y cuánto dura; nunca
-              diría "haga clic aquí", que a un lector de pantalla no le
-              comunica absolutamente nada.
+              fondo: no es imagen y no es VML. Se ve en Outlook, se
+              alcanza con Tab, y el lector de pantalla lo anuncia como
+              enlace con su texto completo.
+
+              El texto no dice "haga clic aquí", que a un lector de
+              pantalla no le comunica nada, ni describe el producto, que
+              arruinaría la sorpresa. Dice qué le espera y cuánto dura.
             -->
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr>
-                <td bgcolor="#a3170f" align="center" style="background-color:#a3170f; border-radius:6px;">
+                <td bgcolor="#c1272d" align="center" style="background-color:#c1272d; border-radius:8px;">
                   <a class="boton" href="https://whafonsecav.github.io/Granja-Tierra-Fresca/"
-                     style="display:block; padding:30px 26px; font-family:Arial,Helvetica,sans-serif; font-size:22px; font-weight:bold; line-height:30px; color:#ffffff; text-decoration:none;">
-                    Escuchar el mensaje de la Granja Tierra Fresca, dos minutos
+                     style="display:block; padding:32px 26px; font-family:Georgia,'Times New Roman',serif; font-size:23px; font-weight:normal; line-height:32px; color:#ffffff; text-decoration:none;">
+                    Grabamos dos minutos pensando en ti
                   </a>
                 </td>
               </tr>

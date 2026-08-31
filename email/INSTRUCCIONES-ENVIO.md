@@ -39,30 +39,36 @@ campos que el sistema le lee solo.
 
 ---
 
-## Asunto
+## Las dos únicas frases de la campaña
 
-Use este:
+Todo el correo son dos frases. No hay nada más.
 
-> **Tenemos un mensaje especial para ti**
+**Asunto:**
 
-Cuatro razones por las que es este y no otro:
+> Tenemos un mensaje especial para ti
 
-- **No revela el producto.** Un asunto que empiece por "tomate" o "granja" se
-  clasifica solo como publicidad antes de terminar de leerse. Este obliga a
-  abrir para saber de qué se trata.
-- **Es corto.** Treinta y cinco caracteres: no se corta en ninguna vista de
-  bandeja, ni en el celular. El lector de pantalla lo lee entero de un tirón.
-- **Tutea.** Es lo mismo que hace la voz de la página, así que el tono no
-  cambia a mitad de camino.
-- **Es literalmente la primera frase que va a oír al entrar.** La página abre
-  diciendo "Tenemos un mensaje especial para ti". Ese eco no es pereza: le
-  confirma, sin verlo, que llegó al sitio correcto.
+**Botón:**
 
-Alternativas, por si prefiere otro tono:
+> Grabamos dos minutos pensando en ti
 
-- *Grabamos dos minutos pensando en ti.* (38 caracteres, más cálido)
-- *Un mensaje que preferimos que escuches, no que leas.* (52 caracteres,
-  más intrigante; insinúa el diseño sonoro sin condescendencia)
+Se responden entre sí y ninguna revela de qué se trata. Ni "tomate", ni
+"granja", ni "cocina": un correo que nombra el producto en la primera frase se
+clasifica solo como publicidad antes de que el destinatario termine de oírlo, y
+con un lector de pantalla eso pasa en dos segundos.
+
+Lo único que prometen es lo que de verdad se está ofreciendo: dos minutos
+grabados para él. El asunto además es la primera frase que va a oír al entrar
+a la página, que abre diciendo "Tenemos un mensaje especial para ti". Ese eco
+le confirma, sin ver nada, que llegó al sitio correcto.
+
+Como el correo no tiene más texto que el botón, **la vista previa de la bandeja
+la ocupa el texto del botón**. Por eso las dos frases están escritas para oírse
+seguidas, en ese orden.
+
+Alternativas para el asunto, por si prefiere otro tono:
+
+- *Grabamos algo pensando en ti* (28 caracteres)
+- *Un mensaje que preferimos que escuches, no que leas* (51 caracteres)
 
 Tres cosas que **no** debe hacer con el asunto:
 
@@ -72,19 +78,6 @@ Tres cosas que **no** debe hacer con el asunto:
   ("red apple", "loudspeaker") y arruina el arranque de la frase.
 - No use `RE:` ni `FW:` falsos para forzar apertura. Con este destinatario, ese
   truco quema la confianza que es justamente lo que le estamos vendiendo.
-
-## Texto de vista previa (preheader)
-
-Ya viene incrustado en el HTML, oculto visualmente. Es este:
-
-> Dos minutos de cocina real: el agua sobre la cáscara, el cuchillo en la pulpa,
-> el aceite caliente. Un solo botón en todo el correo.
-
-Los caracteres `&#8203;` (espacio de ancho cero) que van después no son basura:
-si no estuvieran, Outlook rellenaría la vista previa con las primeras palabras
-del cuerpo y se perdería el remate.
-
----
 
 ## Paso a paso del envío desde el correo institucional
 
@@ -126,8 +119,8 @@ justo después del asunto.
      `whafonsecav.github.io/Granja-Tierra-Fresca` (si aparece
      `safelinks.protection.outlook.com`, es normal: la universidad reescribe
      todos los enlaces y sigue funcionando);
-   - en la lista de la bandeja, debajo del asunto, se lee la línea de los dos
-     minutos de cocina;
+   - en la lista de la bandeja, debajo del asunto, se lee "Grabamos dos
+     minutos pensando en ti";
    - el correo llegó a Recibidos y no a Correo no deseado.
 
 6. Escuche esa prueba con el Narrador de Windows (`Ctrl + Windows + Enter`).

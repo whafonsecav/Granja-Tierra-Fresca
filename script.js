@@ -298,13 +298,46 @@
   //      real tambien empieza con comas: si algo se pierde, se pierde una
   //      pausa y no la primera silaba de la primera palabra.
   //
-  // NO se usa puntuacion como pausa. Es tentador anteponer comas al texto
-  // para que el recorte se coma una pausa en vez de una silaba, pero varios
-  // motores de voz de celular VERBALIZAN los signos: la pagina termina
-  // diciendo "coma, coma, coma" antes de cada frase. Es peor el remedio.
+  // ---------------------------------------------------------------------
+  // El arranque recortado, y por que se resuelve con un saludo
+  // ---------------------------------------------------------------------
+  // Los motores de voz se comen el principio de la primera frase de la
+  // sesion. La causa es que el dispositivo de salida esta dormido y tarda
+  // unos 300 milisegundos en abrir, y ese tiempo se lo lleva el audio.
   //
-  // El calentamiento se hace con volumen cero, que no puede sonar pase lo
-  // que pase, y el despertar del dispositivo lo sigue haciendo WebAudio.
+  // Se probaron dos remedios que no sirven, y conviene dejarlos anotados:
+  //
+  //   - Anteponer comas o puntos para que el recorte se coma una pausa.
+  //     Varios motores de celular VERBALIZAN los signos: la pagina decia
+  //     "coma, coma, coma" antes de cada frase. Inaceptable.
+  //
+  //   - Una frase de calentamiento a volumen cero. Con volumen cero el motor
+  //     no llega a abrir el canal de audio, asi que no despierta nada; y
+  //     encima anadia una segunda locucion en cola, que en Chrome es otra
+  //     causa conocida de recorte.
+  //
+  // Lo que si funciona: que la primera frase empiece por una palabra de
+  // verdad que se pueda perder sin consecuencias. Si el sistema se come 300
+  // milisegundos, se come parte de "Hola" y el mensaje llega entero. No
+  // depende de como interprete el motor la puntuacion, que era el problema
+  // de los otros dos intentos.
+  //
+  // De la segunda frase en adelante ya no hace falta: el usuario ya toco la
+  // pantalla, y con ese gesto despertarSalida() si puede abrir el canal.
+  var yaHabloAlguna = false;
+
+  // Cierto en cuanto el motor de voz EMPIEZA a hablar de verdad, no cuando se
+  // le pide que hable. La diferencia importa: Android Chrome deja hablar sin
+  // gesto previo del usuario, iOS Safari no. Pidiendolo en los dos y mirando
+  // quien arranco, cada plataforma da lo mejor que puede sin que haya que
+  // adivinar por el user agent.
+  var algunaVozSono = false;
+
+  function conSaludoSiEsLaPrimera(texto) {
+    if (yaHabloAlguna) { return texto; }
+    yaHabloAlguna = true;
+    return "Hola. " + texto;
+  }
 
   var latido = null;
 
@@ -324,27 +357,6 @@
     if (latido) { window.clearInterval(latido); latido = null; }
   }
 
-  var vozDesbloqueada = false;
-
-  // iOS y varios Android exigen que la PRIMERA llamada a speak() ocurra dentro
-  // del manejador del gesto del usuario, de forma sincrona. Si pasa por un
-  // setTimeout, como hace hablar(), el navegador la descarta y el motor de voz
-  // queda mudo el resto de la sesion.
-  //
-  // Por eso, en el instante del primer toque, se dispara una frase a volumen
-  // cero sin pasar por ningun temporizador. Solo sirve para desbloquear.
-  function desbloquearVoz() {
-    if (vozDesbloqueada || !TTS ||
-        typeof window.SpeechSynthesisUtterance !== "function") { return; }
-    vozDesbloqueada = true;
-    try {
-      var llave = new window.SpeechSynthesisUtterance(".");
-      llave.volume = 0;
-      llave.lang = "es-CO";
-      TTS.speak(llave);
-    } catch (e) { /* sin efecto */ }
-  }
-
   function nuevaFrase(texto, voz) {
     var f = new window.SpeechSynthesisUtterance(texto);
     f.lang = "es-CO";
@@ -359,8 +371,8 @@
 
   // hablar(texto, despues): apaga el microfono, deja pasar el silencio de
   // arranque, dice el texto en espanol y solo entonces ejecuta "despues". Es
-  // el unico punto del archivo donde se sintetiza voz, para que las reglas 1
-  // y 2 del encabezado no dependan de acordarse de aplicarlas en cada sitio.
+  // el punto por el que pasa casi toda la voz de la pagina, para que las
+  // reglas 1 y 2 del encabezado no dependan de acordarse de aplicarlas.
   function hablar(texto, despues) {
     detenerMicrofono();
     anunciar(texto);
@@ -385,35 +397,12 @@
       }
       // El silencio de WebAudio esta sonando durante esta espera. Cuando entra
       // la voz, el dispositivo ya esta abierto.
-      window.setTimeout(function () { calentarYDecir(texto, voz, seguir); },
-                        SILENCIO_INICIAL_MS);
+      window.setTimeout(function () {
+        decirEnVozAlta(conSaludoSiEsLaPrimera(texto), voz, seguir);
+      }, SILENCIO_INICIAL_MS);
     });
   }
 
-  // Capa 2: frase de calentamiento a volumen cero. Abre el canal del motor de
-  // voz sin que se oiga nada, ni siquiera si el motor decidiera verbalizar el
-  // punto: con volume 0 no hay sonido posible.
-  function calentarYDecir(texto, voz, seguir) {
-    var calienta = nuevaFrase(".", voz);
-    calienta.volume = 0;
-
-    var arrancado = false;
-    function decirDeVerdad() {
-      if (arrancado) { return; }
-      arrancado = true;
-      decirEnVozAlta(texto, voz, seguir);
-    }
-
-    calienta.onend = decirDeVerdad;
-    calienta.onerror = decirDeVerdad;
-    // Si el calentamiento no avisa que termino, se sigue igual: perder el
-    // respiro es molesto, quedarse mudo es fatal.
-    window.setTimeout(decirDeVerdad, 1600);
-
-    try { TTS.speak(calienta); } catch (e) { decirDeVerdad(); }
-  }
-
-  // Capa 3: la frase real, tal cual, sin nada antepuesto.
   function decirEnVozAlta(texto, voz, seguir) {
     var frase = nuevaFrase(texto, voz);
 
@@ -427,6 +416,7 @@
       window.setTimeout(seguir, 250);
     }
 
+    frase.onstart = function () { algunaVozSono = true; };
     frase.onend = finalizar;
     frase.onerror = finalizar;
     // Red de seguridad: en algunos Chrome "onend" no dispara si la pestana
@@ -434,6 +424,52 @@
     window.setTimeout(finalizar, tiempoDeLectura(texto) + 6000);
 
     iniciarLatido();
+    try { TTS.speak(frase); } catch (e) { finalizar(); }
+  }
+
+  // Habla SIN temporizadores y SIN cancelar nada antes.
+  //
+  // iOS solo acepta la primera locucion de la sesion si speak() se llama de
+  // forma sincrona dentro del manejador del gesto del usuario. hablar() no
+  // sirve para eso: mete un setTimeout para dejar su silencio inicial, y ese
+  // salto basta para que el navegador descarte la locucion y deje el motor de
+  // voz mudo el resto de la sesion.
+  //
+  // Por eso el primer mensaje despues del toque, que es justo el que no puede
+  // fallar, va por aqui. Tampoco hace falta el calentamiento contra el
+  // recorte: el usuario acaba de tocar la pantalla, asi que el dispositivo de
+  // audio ya esta despierto.
+  function hablarDeInmediato(texto, despues) {
+    anunciar(texto);
+
+    function seguir() { if (despues) { despues(); } }
+
+    if (!TTS || typeof window.SpeechSynthesisUtterance !== "function") {
+      window.setTimeout(seguir, tiempoDeLectura(texto));
+      return;
+    }
+
+    var frase = new window.SpeechSynthesisUtterance(conSaludoSiEsLaPrimera(texto));
+    frase.lang = "es-CO";
+    frase.rate = 0.95;
+    frase.pitch = 1.02;
+    // Si la lista de voces todavia no ha cargado no se espera: con lang en
+    // es-CO el motor escoge una voz espanola por su cuenta. Aqui vale mas
+    // hablar de inmediato que hablar con la voz perfecta.
+    var voz = vozEspanol();
+    if (voz) { frase.voice = voz; }
+
+    var listo = false;
+    function finalizar() {
+      if (listo) { return; }
+      listo = true;
+      window.setTimeout(seguir, 250);
+    }
+    frase.onstart = function () { algunaVozSono = true; };
+    frase.onend = finalizar;
+    frase.onerror = finalizar;
+    window.setTimeout(finalizar, tiempoDeLectura(texto) + 5000);
+
     try { TTS.speak(frase); } catch (e) { finalizar(); }
   }
 
@@ -760,25 +796,27 @@
     // sola, sin que el usuario tenga que buscar nada en la pagina.
     arranque.focus();
 
-    // En computador se dice en voz alta de una. En movil NO se intenta
-    // siquiera: iOS y Android bloquean la voz antes del primer gesto, y la
-    // frase se quedaba en cola hasta que el toque la soltaba, con lo cual el
-    // usuario oia la bienvenida DESPUES de haber tocado, encima del mensaje
-    // que si correspondia a ese momento. Sonaba a que la pagina se repetia.
+    // Se intenta hablar en TODAS las plataformas, sin preguntar cual es.
     //
-    // En movil el aria-label ya lleva el mismo texto para el lector de
-    // pantalla, y quien no lo use lo escucha completo en cuanto toca.
-    if (!esMovil()) { hablar(texto); }
-    else { anunciar(texto); }
+    // Android Chrome deja hablar sin gesto previo, asi que alli el mensaje
+    // suena solo, que es como debe ser. iOS Safari lo bloquea y la locucion
+    // se queda en cola. De eso se encarga comenzar(): si al tocar la pantalla
+    // resulta que nunca llego a sonar nada, la cancela y la dice en ese
+    // momento. Y si si sono, no la repite.
+    //
+    // Antes esto estaba apagado en movil por completo, para evitar que la
+    // frase en cola se soltara encima del mensaje del toque. Fue un exceso:
+    // apago tambien Android, donde funcionaba bien.
+    hablar(texto);
   }
 
   function comenzar() {
     if (yaArranco) { return; }
     yaArranco = true;
-    if (TTS) {
-      TTS.cancel();
-      desbloquearVoz();   // sincrono, dentro del gesto: lo exige iOS
-    }
+
+    // Se cancela lo que haya quedado en cola. En iOS la bienvenida sigue ahi
+    // esperando, y sin esto se soltaria encima de lo que viene ahora.
+    if (TTS && algunaVozSono) { TTS.cancel(); }
 
     despertarSalida();
     mantenerPantallaEncendida();
@@ -791,9 +829,15 @@
     // es el primer instante en que la voz puede sonar, asi que se le dice aqui
     // lo que no se le pudo decir antes. En computador ya lo escucho y seria
     // repetirselo, asi que alli se entra directo.
-    if (esMovil()) {
-      hablar("Tenemos un mensaje especial para ti. " + AVISO_PREGUNTAS +
-             " Aquí va.", reproducir);
+    // Si el mensaje de bienvenida nunca llego a sonar, es que la plataforma
+    // lo bloqueo: iOS Safari, tipicamente. Este es el primer instante en que
+    // se puede hablar, asi que se dice aqui, por la via sincrona, que es la
+    // unica que iOS acepta. Ver hablarDeInmediato.
+    //
+    // Si si sono, no se repite nada: se entra directo a la experiencia.
+    if (!algunaVozSono) {
+      hablarDeInmediato("Tenemos un mensaje especial para ti. " +
+                        AVISO_PREGUNTAS + " Aquí va.", reproducir);
       return;
     }
 
