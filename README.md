@@ -116,6 +116,40 @@ ESPERA_GESTO ──gesto──> REPRODUCIENDO ──fin del audio──> PREGUNT
                     (ambas ramas) ───┴───> PREGUNTA_PDF ──> FIN
 ```
 
+## Antes de subir cualquier cambio: sellar la versión
+
+```bash
+python tools/sellar_version.py
+```
+
+**Si se olvida, los archivos nuevos quedan publicados pero a nadie le llegan.**
+
+El navegador guarda lo que descarga. Si la página siempre pide `script.js`,
+`experiencia.mp3` o el PDF con el mismo nombre, no tiene forma de saber que
+cambiaron y sigue usando la copia que ya tenía. A quien ya abrió el sitio se le
+queda una versión antigua.
+
+Ese fue un fallo real y costó una entrega: el PDF que se descargaba era el
+anterior, con un texto que ya se había corregido. Y no hay salida por el lado
+del usuario — a un destinatario no se le pide que borre la caché, y menos
+cuando ya son varios los que abrieron el enlace.
+
+El script pone un sello en cada referencia del HTML:
+
+```
+script.js  ->  script.js?v=20260831T0633
+```
+
+Para el navegador esa es otra dirección, así que la descarga de nuevo. No puede
+servir la vieja, porque la vieja tenía otro nombre.
+
+Queda el propio HTML, que se pide siempre igual. Para eso el script escribe
+también `version.json`: la página lo consulta al arrancar, sin pasar por la
+caché, y compara con el sello que trae incrustado. Si no coinciden, se recarga
+una sola vez pidiendo el sello nuevo, y después limpia el parámetro de la barra
+de direcciones para que nadie vea ni copie una URL con cosas pegadas. Hay una
+marca en `sessionStorage` que impide que eso entre en bucle.
+
 ## Estructura
 
 ```
@@ -130,6 +164,8 @@ email/correo-outlook.html           el correo listo para enviar
 email/INSTRUCCIONES-ENVIO.md        cómo enviarlo y por qué así
 tools/generar_pdf.py                regenera el PDF (1 párrafo, 10 líneas)
 tools/generar_fondo.py              regenera el fondo
+tools/sellar_version.py             sella la versión (ejecutar antes de subir)
+version.json                        el sello que consulta la página
 tools/registro-apps-script.gs       intermediario que guarda los números
 ```
 

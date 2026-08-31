@@ -202,6 +202,58 @@
   }
 
   /* =====================================================================
+     Que nadie se quede con una version vieja
+     ===================================================================== */
+
+  // El sello de version viaja en cada direccion del HTML: script.js?v=...,
+  // experiencia.mp3?v=..., y asi. Cuando cambia el sello cambia la direccion,
+  // y el navegador se ve obligado a descargar de nuevo. Eso resuelve los
+  // archivos.
+  //
+  // Falta el propio HTML, que se pide siempre con la misma direccion y podria
+  // servirse de la copia guardada. Para eso esta esto: se consulta
+  // version.json sin pasar por la cache y se compara con el sello que trae
+  // incrustado la pagina que se esta ejecutando. Si no coinciden, es que el
+  // navegador sirvio un HTML atrasado, y se recarga una sola vez pidiendolo
+  // con el sello nuevo.
+  //
+  // No se le pide a nadie que borre la cache. Eso no se le pide a un
+  // destinatario, y menos cuando ya son varios los que abrieron el enlace.
+  function comprobarVersion() {
+    var meta = document.querySelector('meta[name="tf-version"]');
+    var mia = meta ? meta.getAttribute("content") : null;
+    if (!mia || typeof window.fetch !== "function") { return; }
+
+    window.fetch("version.json?t=" + (new Date()).getTime(), { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (!d || !d.version || d.version === mia) { return; }
+
+        // Salvaguarda contra recargas en bucle: si ya se recargo por este
+        // mismo desfase, no se vuelve a intentar. Es preferible una pagina
+        // atrasada a una que se recarga sin parar.
+        var marca = "tierrafresca.recarga";
+        try {
+          if (window.sessionStorage.getItem(marca) === mia) { return; }
+          window.sessionStorage.setItem(marca, mia);
+        } catch (e) { return; }
+
+        window.location.replace(window.location.pathname + "?v=" + d.version);
+      })["catch"](function () { /* sin red: se sigue con lo que hay */ });
+  }
+
+  // La direccion queda limpia despues de una recarga por version. El
+  // parametro ya cumplio su unico trabajo, que era obligar la descarga; se
+  // quita para que nadie vea ni copie una URL con cosas pegadas.
+  function limpiarDireccion() {
+    if (!window.location.search) { return; }
+    if (!window.history || !window.history.replaceState) { return; }
+    try {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } catch (e) { /* sin efecto */ }
+  }
+
+  /* =====================================================================
      Idioma de la voz
      ===================================================================== */
 
@@ -1383,6 +1435,9 @@
   /* =====================================================================
      Arranque
      ===================================================================== */
+
+  comprobarVersion();
+  limpiarDireccion();
 
   // La descarga NO se dispara aqui. En un celular, el gestor de descargas se
   // toma la pantalla apenas empieza a bajar el archivo, y la pagina se queda
