@@ -369,6 +369,22 @@
     return p;
   }
 
+  // La mejor voz INSTALADA en el aparato para un idioma. Sirve de red cuando
+  // la voz elegida se sintetiza en servidor y la red no responde.
+  function vozLocal(idioma) {
+    if (!TTS) { return null; }
+    var voces = TTS.getVoices() || [];
+    var i, v;
+    for (i = 0; i < voces.length; i++) {
+      v = voces[i];
+      if (v.localService && codigoDeIdioma(v.lang) === idioma) { return v; }
+    }
+    for (i = 0; i < voces.length; i++) {
+      if (voces[i].localService) { return voces[i]; }
+    }
+    return null;
+  }
+
   function vozEspanol() {
     if (!TTS) { return null; }
     var voces = TTS.getVoices() || [];
@@ -508,27 +524,25 @@
     if (latido) { window.clearInterval(latido); latido = null; }
   }
 
-  // Comprueba a mano si el motor esta hablando.
+  // NOTA IMPORTANTE, para no volver a caer en lo mismo.
   //
-  // Hace falta porque no todos disparan "onstart". Edge en Android, por
-  // ejemplo, reproduce la locucion perfectamente y nunca avisa que empezo.
-  // Como la pagina se fiaba solo de ese evento, creia que la bienvenida no
-  // habia sonado y la repetia al tocar la pantalla; y ese rodeo hacia expirar
-  // el permiso del gesto, con lo cual el audio ya no arrancaba y hacia falta
-  // un segundo toque. Un solo evento que no llega, tres sintomas.
-  function vigilarSiSuena() {
-    if (!TTS || algunaVozSono) { return; }
-    var vigilante = window.setInterval(function () {
-      if (!TTS || algunaVozSono) { window.clearInterval(vigilante); return; }
-      if (TTS.speaking) {
-        algunaVozSono = true;
-        window.clearInterval(vigilante);
-      }
-    }, 150);
-    // Si a los cuatro segundos no ha sonado nada, es que el navegador lo
-    // bloqueo de verdad. Se deja de mirar.
-    window.setTimeout(function () { window.clearInterval(vigilante); }, 4000);
-  }
+  // Aqui habia una vigilancia que miraba TTS.speaking para deducir si la voz
+  // habia sonado. Parecia razonable y estaba mal: en iOS Safari y en algunos
+  // Chrome de Android, speaking devuelve true en cuanto se encola la
+  // locucion, AUNQUE el navegador la tenga bloqueada y no salga ni un sonido.
+  //
+  // El resultado fue el peor posible. La pagina creia que la bienvenida ya se
+  // habia oido, asi que al tocar la pantalla se saltaba la frase del toque y
+  // entraba directo el audio. Y como esa frase era la unica ligada a un gesto
+  // del usuario, el motor de voz nunca se desbloqueaba: el bot no hablaba en
+  // toda la sesion, ni al principio ni en las preguntas del final. En un
+  // iPhone 13 y en un Galaxy S24 fallaba; en un S25 y en un Mac funcionaba.
+  //
+  // Leccion: speaking no prueba que haya sonido. La unica prueba es onstart,
+  // que dispara cuando el motor empieza a emitir de verdad.
+  //
+  // Ya no hace falta deducir nada, porque ahora en el toque se habla SIEMPRE.
+  // Ver comenzar().
 
   function nuevaFrase(texto, voz, idioma) {
     var pack = IDIOMAS[idioma || "es"] || IDIOMAS.es || {};
@@ -610,7 +624,8 @@
       window.setTimeout(seguir, 250);
     }
 
-    locucion.onstart = function () { algunaVozSono = true; };
+    var arranco = false;
+    locucion.onstart = function () { arranco = true; algunaVozSono = true; };
     locucion.onend = finalizar;
     locucion.onerror = finalizar;
     // Red de seguridad: en algunos Chrome "onend" no dispara si la pestana
@@ -619,7 +634,27 @@
 
     iniciarLatido();
     try { TTS.speak(locucion); } catch (e) { finalizar(); }
-    vigilarSiSuena();
+
+    // Si a los dos segundos y medio no ha empezado a sonar, se reintenta una
+    // vez con una voz instalada en el aparato.
+    //
+    // Las mejores voces de Chrome, las de Google, se sintetizan en servidor:
+    // necesitan internet y se quedan mudas si la red las bloquea o va mal.
+    // Una voz local suena peor, pero suena. Esto cubre el caso de que la
+    // pieza se abra desde una red distinta o restringida.
+    window.setTimeout(function () {
+      if (arranco || listo || !TTS) { return; }
+      var local = vozLocal(idioma);
+      if (!local || (voz && local.name === voz.name)) { return; }
+      try {
+        TTS.cancel();
+        var reintento = nuevaFrase(texto, local, idioma);
+        reintento.onstart = function () { arranco = true; algunaVozSono = true; };
+        reintento.onend = finalizar;
+        reintento.onerror = finalizar;
+        TTS.speak(reintento);
+      } catch (e) { /* se deja como estaba */ }
+    }, 2500);
   }
 
 
@@ -675,7 +710,6 @@
     window.setTimeout(finalizar, tiempoDeLectura(texto) + 5000);
 
     try { TTS.speak(locucion); } catch (e) { finalizar(); }
-    vigilarSiSuena();
   }
 
 
@@ -1071,28 +1105,26 @@
     arranque.setAttribute("aria-label", "Reproduciendo.");
     arranque.blur();
 
-    // Si el mensaje de bienvenida nunca llego a sonar, es que el navegador lo
-    // bloqueo: iOS Safari siempre, Edge a menudo. Este es el primer instante
-    // en que se puede hablar, asi que se dice aqui, por la via sincrona, que
-    // es la unica que iOS acepta. Ver hablarDeInmediato.
+    // Aqui se habla SIEMPRE, sin preguntarse si la bienvenida llego a sonar.
     //
-    // Si si sono, no se repite: se entra directo a la experiencia.
-    if (!algunaVozSono) {
-      // El permiso que da un toque dura poco. Como aqui primero se habla y
-      // solo despues se reproduce, para cuando llega el turno del audio ese
-      // permiso ya expiro y el navegador rechaza play(): por eso en Edge
-      // hacia falta tocar la pantalla una segunda vez.
-      //
-      // Se resuelve arrancando y pausando el audio ahora mismo, todavia
-      // dentro del gesto. El elemento queda desbloqueado y el play() de
-      // despues ya no se rechaza.
-      desbloquearAudio();
-
-      hablarDeInmediato("puente", reproducir);
-      return;
-    }
-
-    reproducir();
+    // Es la unica locucion de toda la sesion que sale dentro de un gesto del
+    // usuario, y eso la vuelve imprescindible: iOS Safari solo desbloquea el
+    // motor de voz si la primera llamada a speak() ocurre dentro del gesto.
+    // Sin ella el bot se queda mudo el resto de la sesion, incluidas las
+    // preguntas del final. Saltarsela por creer que ya se habia hablado fue
+    // justo el error que dejo sin voz al iPhone y al Galaxy S24.
+    //
+    // Por eso la frase es corta: "Aqui va". Dicha a todo el mundo no suena a
+    // repeticion ni siquiera para quien acabe de oir la bienvenida completa,
+    // y el aviso del microfono se movio a donde de verdad hace falta, justo
+    // antes de las preguntas.
+    //
+    // El permiso que da un toque dura poco, y aqui primero se habla y solo
+    // despues se reproduce: para cuando llega el turno del audio ese permiso
+    // ya expiro. Se resuelve arrancando y pausando el audio ahora mismo,
+    // todavia dentro del gesto, con lo que el elemento queda desbloqueado.
+    desbloquearAudio();
+    hablarDeInmediato("arranca", reproducir);
   }
 
   arranque.addEventListener("click", function (e) { e.preventDefault(); comenzar(); });
@@ -1122,7 +1154,20 @@
     }
   }
 
-  audio.addEventListener("ended", function () { preguntarRepetir(); });
+  var yaAvisoDelMicrofono = false;
+
+  audio.addEventListener("ended", function () {
+    // El aviso del microfono se da aqui, una sola vez, porque este es el
+    // momento en que empieza a hacer falta: el navegador va a pedir el
+    // permiso en unos segundos. Anunciarlo al abrir la pagina, que es donde
+    // estaba antes, obligaba a repetirlo o a que alguien se lo perdiera.
+    if (!yaAvisoDelMicrofono) {
+      yaAvisoDelMicrofono = true;
+      hablar("avisoMicrofono", preguntarRepetir);
+      return;
+    }
+    preguntarRepetir();
+  });
 
   audio.addEventListener("error", function () {
     hablar("errorAudio", preguntarContacto);
