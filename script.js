@@ -84,6 +84,27 @@
   var ENDPOINT_REGISTRO =
     "https://script.google.com/macros/s/AKfycbxFqFEXw0ZI7rv9d-eOJbSiLWLF3ATxZbGpsCk0KiXroUSGDi3oJgH0GalBz-ZLt9fn/exec";
 
+  // Hablar aunque el equipo no tenga ninguna voz en espanol instalada.
+  //
+  // La primera version hacia lo contrario: si no encontraba voz espanola se
+  // callaba, con el argumento de que una voz inglesa leyendo espanol se
+  // entiende peor que el silencio. El argumento no era malo, pero la realidad
+  // lo desmintio.
+  //
+  // Windows suele traer solo voces en ingles. Chrome no lo nota porque trae
+  // las suyas propias, con espanol incluido; Edge usa unicamente las del
+  // sistema. Resultado: la misma pagina hablaba en Chrome y se quedaba muda
+  // en Edge, en el mismo computador. Para quien la usa eso no es una decision
+  // de calidad, es una pagina rota.
+  //
+  // Se habla siempre, con lang en es-CO. Aunque la voz sea inglesa, muchos
+  // motores le aplican al menos parte de la fonetica del idioma declarado, y
+  // una voz con acento raro es infinitamente mejor que el silencio.
+  //
+  // La recomendacion para el equipo donde se presente la pieza sigue en pie:
+  // Configuracion, Hora e idioma, Voz, Agregar voces, Espanol.
+  var HABLAR_SIN_VOZ_ESPANOLA = true;
+
   // Velocidad de la voz. En escritorio va mas rapida: las voces de Windows
   // son de por si pausadas y a velocidad nominal se hacen eternas. En movil
   // se deja en 1, porque los motores de Android e iOS ya leen mas agil y
@@ -250,13 +271,6 @@
     return p;
   }
 
-  // Cierto solo si el navegador ya termino de enumerar sus voces.
-  function hayVocesEnumeradas() {
-    if (!TTS || typeof TTS.getVoices !== "function") { return true; }
-    var v = TTS.getVoices();
-    return !!(v && v.length);
-  }
-
   function vozEspanol() {
     if (!TTS) { return null; }
     var voces = TTS.getVoices() || [];
@@ -292,8 +306,9 @@
       TTS.addEventListener("voiceschanged", resolver);
     }
     // Edge tarda bastante mas que Chrome en enumerar sus voces, sobre todo
-    // las que se sintetizan en servidor. Con 1500 ms se le agotaba el tiempo
-    // y la pagina se quedaba muda.
+    // las que se sintetizan en servidor. Pasado este tiempo se sigue adelante
+    // con lo que haya, que puede ser nada: hablar con la voz por defecto es
+    // preferible a esperar indefinidamente en silencio.
     window.setTimeout(resolver, 2800);
   }
 
@@ -428,20 +443,10 @@
     TTS.cancel();
 
     conVozLista(function (voz) {
-      // Hay que distinguir dos situaciones que parecen la misma y no lo son:
-      //
-      //   a) El navegador ya enumero sus voces y ninguna habla espanol. Ahi
-      //      no se sintetiza: una voz inglesa leyendo espanol se entiende
-      //      peor que el silencio, y el lector de pantalla del usuario ya
-      //      recibio el texto por aria-live.
-      //
-      //   b) El navegador todavia no ha enumerado nada y devuelve una lista
-      //      vacia. Eso no significa que no tenga voces: Edge tarda mucho mas
-      //      que Chrome, sobre todo con las voces de servidor. Aqui SI se
-      //      habla, sin voz explicita, y el motor escoge segun lang. Tratar
-      //      este caso como el anterior es lo que dejaba muda la pagina en
-      //      Edge mientras en Chrome funcionaba.
-      if (!voz && hayVocesEnumeradas()) {
+      // Aqui NO se decide callar. Se habla con la mejor voz que haya, y si no
+      // hay ninguna en espanol se habla igual con la del sistema, salvo que
+      // se apague a proposito. Ver la nota de HABLAR_SIN_VOZ_ESPANOLA.
+      if (!voz && !HABLAR_SIN_VOZ_ESPANOLA) {
         window.setTimeout(seguir, SILENCIO_INICIAL_MS + tiempoDeLectura(texto));
         return;
       }
