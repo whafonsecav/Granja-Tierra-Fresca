@@ -53,7 +53,7 @@ lista de Outlook ni en la del celular.
 Alternativas, por si quiere variar:
 
 - *No le vamos a describir el tomate. Se lo vamos a hacer oír.* (58 caracteres)
-- *Profesor Carlos: un minuto de cocina, sin una sola imagen.* (57 caracteres)
+- *Profesor Carlos: dos minutos de cocina, sin una sola imagen.* (58 caracteres)
 
 Tres cosas que **no** debe hacer con el asunto:
 
@@ -68,7 +68,7 @@ Tres cosas que **no** debe hacer con el asunto:
 
 Ya viene incrustado en el HTML, oculto visualmente. Es este:
 
-> Un minuto de cocina real: el agua sobre la cáscara, el cuchillo en la pulpa,
+> Dos minutos de cocina real: el agua sobre la cáscara, el cuchillo en la pulpa,
 > el aceite caliente. Un solo botón en todo el correo.
 
 Los caracteres `&#8203;` (espacio de ancho cero) que van después no son basura:

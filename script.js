@@ -8,7 +8,7 @@
      ESPERA_GESTO      El navegador exige un gesto antes de sonar. La pantalla
                        entera es la superficie de arranque y tiene el foco, asi
                        que el lector de pantalla lee la instruccion sola.
-     REPRODUCIENDO     Suena el audio ASMR de un minuto.
+     REPRODUCIENDO     Suena el audio ASMR.
      PREGUNTA_REPETIR  "Desea reproducir nuevamente?"  ->  si / no
      PREGUNTA_CONTACTO "Desea contactar a Tierra Fresca?"  ->  si / no
      CAPTURA_NUMERO    Dicta el celular completo, de corrido.
@@ -917,7 +917,7 @@
     window.clearTimeout(relojDictado);
     detenerMicrofono();
     hablar(
-      "Con mucho gusto. Gracias por darnos un minuto de su tiempo y de su " +
+      "Con mucho gusto. Gracias por darnos un rato de su tiempo y de su " +
       "atención. Que ese guiso le quede como en casa. Hasta pronto."
     );
   }

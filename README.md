@@ -73,7 +73,7 @@ en `true` y llene `NUMERO_WHATSAPP` en `script.js`.
    fondo de la granja desenfocado. Todo ocurre por voz.
 4. Al cargar, la superficie de arranque recibe el foco y el sistema le lee
    *«toque la pantalla»* en celular, o *«oprima cualquier tecla»* en computador.
-5. Con ese gesto arranca el audio ASMR de un minuto, y se descarga sola la
+5. Con ese gesto arranca el audio ASMR, y se descarga sola la
    propuesta en PDF.
 6. Al terminar, una voz en español pregunta: **«¿Desea reproducir la experiencia
    nuevamente?»** Reconocimiento de voz para **sí** o **no**.
@@ -119,7 +119,7 @@ ESPERA_GESTO ──gesto──> REPRODUCIENDO ──fin del audio──> PREGUNT
 index.html                          la experiencia (pantalla vacía)
 style.css                           fondo desenfocado, nada más
 script.js                           máquina de estados: audio, voz, micrófono
-audio/experiencia.mp3               pista ASMR de un minuto
+audio/experiencia.mp3               pista ASMR (1 min 44 s)
 docs/Tomate-de-Guiso-...pdf         propuesta de venta (se descarga sola)
 assets/granja-tomates.jpg           fondo, generado por código
 email/correo-outlook.html           el correo listo para enviar

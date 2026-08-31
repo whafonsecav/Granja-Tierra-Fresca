@@ -10,68 +10,73 @@
  * revoca solo, así que ni siquiera duraría.
  *
  * Este script es el intermediario que falta. Corre gratis en la cuenta de
- * Google del dueño de la campaña, guarda el token en las propiedades del
- * proyecto (nunca sale al navegador) y hace dos cosas con cada número:
+ * Google del dueño de la campaña y hace dos cosas con cada número:
  *
- *   1. lo agrega a una hoja de cálculo, para consultarlo cómodo;
- *   2. lo escribe en registros.json dentro del repositorio de GitHub,
- *      que es la "base de datos" que se puede abrir y revisar desde el sitio.
+ *   1. lo agrega a la hoja de cálculo, para consultarlo cómodo;
+ *   2. lo escribe en registros.json de este repositorio, que se puede abrir
+ *      y revisar desde GitHub.
  *
- * Si algo falla en el paso 2, el paso 1 ya quedó hecho. Nunca se pierde un
- * número por un problema de la API de GitHub.
+ * Si el paso 2 falla, el paso 1 ya quedó hecho. Nunca se pierde un número por
+ * un problema de la API de GitHub.
  *
  * ====================================================================
- * CÓMO DESPLEGARLO (una sola vez, unos cinco minutos)
+ * CÓMO DESPLEGARLO (una sola vez)
  * ====================================================================
  *
- *  1. Cree una hoja de cálculo nueva en Google Sheets. Póngale
- *     "Registros Tierra Fresca".
+ *  1. Cree una hoja de cálculo en Google Sheets, con la pestaña llamada
+ *     "Registros".
  *
- *  2. Dentro de la hoja: Extensiones → Apps Script. Borre lo que haya y
- *     pegue este archivo completo.
+ *  2. Extensiones → Apps Script. Borre lo que haya y pegue este archivo.
  *
- *  3. Genere un token de GitHub de alcance mínimo, en
- *     github.com/settings/personal-access-tokens :
+ *  3. Genere un token en github.com/settings/personal-access-tokens :
  *        - Repository access: sólo Granja-Tierra-Fresca
  *        - Permisos: Contents → Read and write
- *     Ese es el único permiso que necesita. Nada más.
+ *     Ése es el único permiso que necesita.
  *
  *  4. En Apps Script: Configuración del proyecto (el engranaje) →
  *     Propiedades de la secuencia de comandos → Agregar propiedad:
  *        Nombre:  GITHUB_TOKEN
  *        Valor:   el token del paso 3
- *     Guardar. El token queda del lado del servidor, nunca en el navegador.
+ *     El token queda del lado del servidor, nunca en el navegador.
  *
- *  5. Implementar → Nueva implementación → tipo "Aplicación web":
+ *  5. Ejecute la función probar() una vez, para comprobar que escribe en la
+ *     hoja y en registros.json. Luego borre esa fila de prueba.
+ *
+ *  6. Implementar → Nueva implementación → "Aplicación web":
  *        Ejecutar como:        Yo
  *        Quién tiene acceso:   Cualquier usuario
- *     Implementar, aceptar los permisos, y copiar la URL que termina en
- *     /exec.
+ *     Copie la URL que termina en /exec.
  *
- *  6. Pegue esa URL en script.js, en la constante ENDPOINT_REGISTRO.
- *     Suba el cambio y listo.
+ *  7. Pegue esa URL en script.js, en la constante ENDPOINT_REGISTRO.
  *
- *  7. Pruebe: abra la página, complete el flujo con un número de prueba, y
- *     revise que aparezca en la hoja y en registros.json.
- *
- * Para cambiar el token después, repita el paso 4. Nunca hay que tocar el
- * código de la página.
+ * NOTA: no hace falta "Publicar en la Web" la hoja. Eso la volvería legible
+ * por cualquiera y expondría los números registrados. Son cosas distintas.
  */
 
-// Repositorio donde se escribe la base de datos.
+// --------------------------------------------------------------------------
+// Configuración
+// --------------------------------------------------------------------------
+
+// Token de GitHub, leido de las propiedades del proyecto. Nunca va escrito
+// aqui: este archivo si esta en el repositorio publico. Ver el paso 4.
+var GITHUB_TOKEN = PropertiesService.getScriptProperties()
+                                    .getProperty('GITHUB_TOKEN');
+
 var REPO_DUENO  = 'whafonsecav';
 var REPO_NOMBRE = 'Granja-Tierra-Fresca';
 var REPO_RAMA   = 'main';
 var ARCHIVO     = 'registros.json';
 
+// Nombre de la pestaña de la hoja. Si le cambia el nombre, cámbielo aquí.
+var PESTANA = 'Registros';
 
-/**
- * Punto de entrada. La página envía aquí un POST con el número.
- *
- * Se acepta tanto JSON como formulario codificado, porque el navegador manda
- * la petición en modo no-cors y en ese modo sólo se pueden usar unos pocos
- * tipos de contenido.
- */
+var ZONA_HORARIA = 'America/Bogota';
+
+
+// --------------------------------------------------------------------------
+// Punto de entrada: la página envía aquí el número
+// --------------------------------------------------------------------------
+
 function doPost(e) {
   var registro;
 
@@ -81,17 +86,17 @@ function doPost(e) {
     return responder({ ok: false, error: 'Petición ilegible: ' + error });
   }
 
-  if (!registro.numero || !/^\d{7,15}$/.test(String(registro.numero))) {
-    return responder({ ok: false, error: 'Número inválido' });
+  var numero = String(registro.numero || '').replace(/\D/g, '');
+  if (numero.length < 7 || numero.length > 15) {
+    return responder({ ok: false, error: 'Número inválido: ' + numero });
   }
 
-  registro.fecha = registro.fecha || new Date().toISOString();
-
+  var fecha = Utilities.formatDate(new Date(), ZONA_HORARIA, 'dd/MM/yyyy HH:mm');
   var resultado = { ok: true, hoja: false, github: false };
 
   // Paso 1: la hoja de cálculo. Es el registro que no puede fallar.
   try {
-    guardarEnHoja(registro);
+    guardarEnHoja(fecha, numero);
     resultado.hoja = true;
   } catch (error) {
     resultado.ok = false;
@@ -100,7 +105,7 @@ function doPost(e) {
 
   // Paso 2: el repositorio. Si falla, el número ya quedó en la hoja.
   try {
-    guardarEnGitHub(registro);
+    guardarEnGitHub(fecha, numero);
     resultado.github = true;
   } catch (error) {
     resultado.errorGitHub = String(error);
@@ -110,76 +115,73 @@ function doPost(e) {
 }
 
 
-/** Permite abrir la URL en el navegador para comprobar que está viva. */
+/** Abrir la URL en el navegador sirve para comprobar que está viva. */
 function doGet() {
-  return responder({ ok: true, mensaje: 'Intermediario de registro activo.' });
+  return responder({ ok: true, mensaje: 'Intermediario de Tierra Fresca activo.' });
 }
 
 
+// --------------------------------------------------------------------------
+// Lectura de la petición
+// --------------------------------------------------------------------------
+
 function leerPeticion(e) {
+  // La página manda JSON como texto plano: es uno de los pocos tipos de
+  // contenido que el navegador permite en una petición sin CORS.
   if (e && e.postData && e.postData.contents) {
     var crudo = e.postData.contents;
-    // Cuerpo JSON (lo que manda la página).
-    if (crudo.charAt(0) === '{') {
-      return JSON.parse(crudo);
-    }
+    if (crudo.charAt(0) === '{') { return JSON.parse(crudo); }
   }
   // Formulario clásico, por si se prueba desde otra herramienta.
   if (e && e.parameter && e.parameter.numero) {
-    return {
-      numero: e.parameter.numero,
-      origen: e.parameter.origen || '',
-      dispositivo: e.parameter.dispositivo || ''
-    };
+    return { numero: e.parameter.numero };
   }
   throw new Error('sin datos');
 }
 
 
-function guardarEnHoja(registro) {
-  var hoja = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
+// --------------------------------------------------------------------------
+// Hoja de cálculo
+// --------------------------------------------------------------------------
 
-  // Encabezados la primera vez.
+function guardarEnHoja(fecha, numero) {
+  var libro = SpreadsheetApp.getActiveSpreadsheet();
+  var hoja = libro.getSheetByName(PESTANA) || libro.getSheets()[0];
+
   if (hoja.getLastRow() === 0) {
-    hoja.appendRow(['Fecha', 'Número', 'Dispositivo', 'Origen']);
-    hoja.getRange(1, 1, 1, 4).setFontWeight('bold');
+    hoja.appendRow(['Fecha y Hora', 'Telefono']);
+    hoja.getRange(1, 1, 1, 2).setFontWeight('bold');
   }
 
-  hoja.appendRow([
-    registro.fecha,
-    // Apóstrofo al inicio: obliga a Sheets a tratarlo como texto y no
-    // borrar el cero de un número que empiece por cero.
-    "'" + registro.numero,
-    registro.dispositivo || '',
-    registro.origen || ''
-  ]);
+  // El apóstrofo obliga a Sheets a tratarlo como texto. Sin él, un celular
+  // se guardaría como número y perdería cualquier cero a la izquierda.
+  hoja.appendRow([fecha, "'" + numero]);
 }
 
 
-/**
- * Escribe registros.json en el repositorio.
- *
- * Se lee el archivo actual para conservar su SHA: la API de GitHub lo exige
- * para actualizar un archivo existente, y es lo que evita que dos registros
- * simultáneos se pisen el uno al otro.
- */
-function guardarEnGitHub(registro) {
-  var token = PropertiesService.getScriptProperties().getProperty('GITHUB_TOKEN');
-  if (!token) {
-    throw new Error('Falta la propiedad GITHUB_TOKEN. Ver el paso 4 de arriba.');
+// --------------------------------------------------------------------------
+// Archivo registros.json en el repositorio
+// --------------------------------------------------------------------------
+
+function guardarEnGitHub(fecha, numero) {
+  if (!GITHUB_TOKEN) {
+    throw new Error('Falta la propiedad GITHUB_TOKEN. Ver el paso 4 del encabezado.');
   }
 
   var url = 'https://api.github.com/repos/' + REPO_DUENO + '/' + REPO_NOMBRE +
             '/contents/' + ARCHIVO;
 
   var cabeceras = {
-    Authorization: 'Bearer ' + token,
+    Authorization: 'Bearer ' + GITHUB_TOKEN,
     Accept: 'application/vnd.github+json'
   };
 
   var lista = [];
   var sha = null;
 
+  // Se lee el archivo actual para conservar su SHA: la API de GitHub lo exige
+  // para actualizar un archivo existente, y es lo que evita que dos registros
+  // seguidos se pisen el uno al otro.
   var actual = UrlFetchApp.fetch(url + '?ref=' + REPO_RAMA, {
     headers: cabeceras,
     muteHttpExceptions: true
@@ -192,27 +194,20 @@ function guardarEnGitHub(registro) {
       lista = JSON.parse(Utilities.newBlob(
         Utilities.base64Decode(datos.content)).getDataAsString());
     } catch (error) {
-      lista = [];   // archivo corrupto o vacío: se empieza de nuevo
+      lista = [];
     }
     if (!(lista instanceof Array)) { lista = []; }
   } else if (actual.getResponseCode() !== 404) {
-    throw new Error('GitHub respondió ' + actual.getResponseCode() +
+    throw new Error('Al leer, GitHub respondió ' + actual.getResponseCode() +
                     ': ' + actual.getContentText());
   }
 
-  lista.push({
-    fecha: registro.fecha,
-    numero: String(registro.numero),
-    dispositivo: registro.dispositivo || '',
-    origen: registro.origen || ''
-  });
-
-  var contenido = Utilities.base64Encode(
-    JSON.stringify(lista, null, 2), Utilities.Charset.UTF_8);
+  lista.push({ fecha: fecha, numero: numero });
 
   var cuerpo = {
-    message: 'Registro de contacto: ' + registro.numero,
-    content: contenido,
+    message: 'Registro de contacto: ' + numero,
+    content: Utilities.base64Encode(JSON.stringify(lista, null, 2),
+                                    Utilities.Charset.UTF_8),
     branch: REPO_RAMA
   };
   if (sha) { cuerpo.sha = sha; }
@@ -227,7 +222,8 @@ function guardarEnGitHub(registro) {
 
   var codigo = escritura.getResponseCode();
   if (codigo !== 200 && codigo !== 201) {
-    throw new Error('GitHub respondió ' + codigo + ': ' + escritura.getContentText());
+    throw new Error('Al escribir, GitHub respondió ' + codigo + ': ' +
+                    escritura.getContentText());
   }
 }
 
@@ -236,4 +232,23 @@ function responder(objeto) {
   return ContentService
     .createTextOutput(JSON.stringify(objeto))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+
+// --------------------------------------------------------------------------
+// Prueba
+// --------------------------------------------------------------------------
+
+/**
+ * Ejecute esta función UNA VEZ desde el editor de Apps Script (selecciónela
+ * arriba y pulse Ejecutar) para comprobar que todo funciona antes de
+ * desplegar. Debe aparecer una fila en la hoja y un número en registros.json.
+ *
+ * Después bórrela de la hoja y del JSON: es un número de prueba.
+ */
+function probar() {
+  var respuesta = doPost({
+    postData: { contents: JSON.stringify({ numero: '3001234567' }) }
+  });
+  Logger.log(respuesta.getContent());
 }

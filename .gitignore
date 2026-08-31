@@ -10,3 +10,6 @@ __pycache__/
 # Configuracion local de editores y herramientas
 .claude/
 .vscode/
+
+# El script de Apps Script CON el token dentro. Nunca se sube al repositorio.
+registro-apps-script-CON-TOKEN.gs
