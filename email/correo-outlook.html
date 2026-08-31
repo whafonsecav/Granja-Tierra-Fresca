@@ -1,0 +1,173 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="es-CO" xml:lang="es-CO">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Este correo no tiene fotos del tomate</title>
+<!--
+  ====================================================================
+  Granja Tierra Fresca — correo de campaña
+  Destinatario: docente universitario, ciego de nacimiento, usuario
+  experto de lector de pantalla (NVDA / JAWS / Narrador).
+
+  DECISIONES DE DISEÑO, Y POR QUÉ:
+
+  1. CERO IMÁGENES. Ni logo, ni foto del producto, ni pixel de
+     seguimiento. El estudio de las 4 P's lo dice literal: "Ignora las
+     marcas que mandan correos llenos de imágenes sin texto, porque su
+     lector de pantalla no le lee nada útil ahí". Además, un correo sin
+     imágenes se ve idéntico con las imágenes bloqueadas, que es como
+     Outlook muestra los correos de remitentes desconocidos.
+
+  2. CERO SCRIPTS, CERO <audio>, CERO <iframe>. No es una limitación
+     que estemos sufriendo: es la razón por la que el correo NO intenta
+     reproducir nada. Cualquier intento de sonido dentro del correo
+     sería descartado por el sanitizador de Outlook y, peor, subiría la
+     probabilidad de caer en Correo no deseado.
+
+  3. UN SOLO ENLACE en todo el correo. Cuando el usuario presiona la
+     tecla K (NVDA: saltar al siguiente enlace) sólo puede llegar a un
+     sitio: la experiencia. No hay "ver en el navegador", ni
+     "darse de baja", ni redes sociales compitiendo por el foco.
+
+  4. TABLAS CON role="presentation". Sin ese atributo, NVDA anuncia
+     "tabla de 3 filas por 1 columna" antes de cada bloque y arruina la
+     lectura. Con él, la maquetación se vuelve invisible al lector.
+
+  5. PREHEADER OCULTO. Es el texto que Outlook muestra (y que el lector
+     de pantalla narra) en la lista de la bandeja, justo después del
+     asunto, ANTES de abrir el correo. Es el único "autoplay" real que
+     existe en email: la voz que él ya tiene encendida leyendo nuestra
+     primera frase.
+  ====================================================================
+-->
+<style type="text/css">
+  /* Outlook de escritorio ignora casi todo esto; por eso lo importante
+     va en atributos inline. Estas reglas sólo mejoran los clientes que
+     sí soportan <style>, y ninguna es indispensable. */
+  body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+  table { border-collapse: collapse !important; }
+  body { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+  a { color: #a3170f; }
+
+  @media screen and (max-width: 620px) {
+    .contenedor { width: 100% !important; }
+    .relleno    { padding-left: 20px !important; padding-right: 20px !important; }
+    .titular    { font-size: 24px !important; line-height: 32px !important; }
+  }
+</style>
+</head>
+
+<body style="margin:0; padding:0; background-color:#f4efe6;">
+
+<!-- PREHEADER: invisible en pantalla, pero es lo primero que se narra en la
+     bandeja de entrada. Los espacios de ancho cero del final evitan que
+     Outlook rellene la vista previa con texto del cuerpo del correo. -->
+<div style="display:none; font-size:1px; color:#f4efe6; line-height:1px; max-height:0px; max-width:0px; opacity:0; overflow:hidden;">
+  Un minuto de cocina real: el agua, el cuchillo, el aceite caliente y la voz de quien lo cocina. Un solo enlace en todo el correo.
+  &#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;
+</div>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4efe6;">
+  <tr>
+    <td align="center" style="padding:24px 12px;">
+
+      <table role="presentation" class="contenedor" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px; max-width:600px; background-color:#ffffff; border:1px solid #e0d5c4;">
+
+        <!-- Encabezado de texto. No es una imagen: es una línea leíble. -->
+        <tr>
+          <td class="relleno" style="padding:28px 40px 0 40px; font-family:Georgia,'Times New Roman',serif; font-size:13px; letter-spacing:2px; text-transform:uppercase; color:#a3170f;">
+            Granja Tierra Fresca
+          </td>
+        </tr>
+
+        <tr>
+          <td class="relleno" style="padding:14px 40px 0 40px;">
+            <h1 class="titular" style="margin:0; font-family:Georgia,'Times New Roman',serif; font-size:29px; line-height:38px; color:#181008; font-weight:normal;">
+              Este correo no tiene fotos del tomate.<br />Tiene el sonido del tomate.
+            </h1>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="relleno" style="padding:22px 40px 0 40px; font-family:Arial,Helvetica,sans-serif; font-size:17px; line-height:28px; color:#241a10;">
+            <p style="margin:0 0 18px 0;">Profesor Carlos, buen día.</p>
+
+            <p style="margin:0 0 18px 0;">
+              Le escribimos desde una granja de tomate de guiso. No le vamos a
+              contar que nuestro tomate es &laquo;muy rojo&raquo;: eso no le sirve de nada
+              y usted lo sabe mejor que nosotros.
+            </p>
+
+            <p style="margin:0 0 18px 0;">
+              Preparamos otra cosa. Un minuto de grabación de una cocina de
+              verdad: el chorro de agua sobre la cáscara, el cuchillo entrando
+              en la pulpa, los cubos cayendo al aceite caliente, el hervor
+              espeso, el plato asentándose en la mesa. Nada de música.
+            </p>
+
+            <p style="margin:0 0 6px 0;">
+              Al final del minuto, la página le va a hablar y le va a decir qué
+              puede responder en voz alta. No tiene que buscar ningún botón.
+            </p>
+          </td>
+        </tr>
+
+        <!-- BOTÓN. Es un enlace real dentro de una celda con color de fondo,
+             no una imagen ni VML: funciona en Outlook, es enfocable con Tab y
+             el lector lo anuncia con su texto completo. El texto del enlace
+             dice a dónde lleva y cuánto dura: nunca "haga clic aquí". -->
+        <tr>
+          <td class="relleno" align="left" style="padding:26px 40px 0 40px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td bgcolor="#a3170f" style="background-color:#a3170f; border-radius:4px;">
+                  <a href="https://whafonsecav.github.io/Granja-Tierra-Fresca/"
+                     style="display:inline-block; padding:20px 34px; font-family:Arial,Helvetica,sans-serif; font-size:19px; font-weight:bold; line-height:22px; color:#ffffff; text-decoration:none;">
+                    Escuchar la experiencia del tomate de guiso, un minuto
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- La dirección en texto plano. Si el cliente rompe el enlace, o si
+             él prefiere copiarla, la información sigue estando disponible. -->
+        <tr>
+          <td class="relleno" style="padding:20px 40px 0 40px; font-family:Arial,Helvetica,sans-serif; font-size:15px; line-height:24px; color:#5b4a36;">
+            Si prefiere escribirla usted mismo, la dirección es
+            whafonsecav.github.io/Granja-Tierra-Fresca
+          </td>
+        </tr>
+
+        <tr>
+          <td class="relleno" style="padding:26px 40px 34px 40px; font-family:Arial,Helvetica,sans-serif; font-size:15px; line-height:25px; color:#241a10;">
+            <p style="margin:0 0 16px 0;">
+              Al abrir la página se descarga sola la propuesta completa en PDF,
+              en un solo párrafo, escrita para que su lector de pantalla la lea
+              de corrido.
+            </p>
+            <p style="margin:0;">
+              Gracias por su minuto.<br />
+              Mariana Silva y William Fonseca &mdash; Granja Tierra Fresca
+            </p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="relleno" style="padding:18px 40px 26px 40px; border-top:1px solid #e0d5c4; font-family:Arial,Helvetica,sans-serif; font-size:12px; line-height:19px; color:#6f6355;">
+            Pieza académica de la asignatura Comportamiento del Consumidor,
+            Politécnico Grancolombiano. La Granja Tierra Fresca es una marca
+            ficticia creada para este ejercicio.
+          </td>
+        </tr>
+
+      </table>
+
+    </td>
+  </tr>
+</table>
+
+</body>
+</html>

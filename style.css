@@ -1,0 +1,243 @@
+/* =========================================================================
+   Granja Tierra Fresca — experiencia sensorial del tomate de guiso
+
+   Dos criterios mandan sobre cualquier decision estetica:
+
+   1. El fondo se desenfoca hasta volverse ilegible. Quien ve la pagina no
+      obtiene ni un dato mas que quien la escucha. Es una decision de campana,
+      no un efecto decorativo.
+   2. Todo lo que SI comunica (texto y botones) va al maximo contraste y a
+      tamanos grandes: el destinatario es ciego, pero la pieza tambien la
+      revisan personas con baja vision.
+   ========================================================================= */
+
+:root {
+  --tinta:        #100a05;
+  --papel:        #fdf6ec;
+  --tomate:       #c0261c;
+  --tomate-vivo:  #ff5a3c;
+  --hoja:         #2f5d2a;
+  --foco:         #ffd24a;
+  --radio:        18px;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--tinta);
+  color: var(--papel);
+  font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(1.05rem, 1.6vw, 1.25rem);
+  line-height: 1.65;
+}
+
+/* --- Fondo desenfocado -------------------------------------------------- */
+/* El inset negativo es obligatorio: sin el, el blur difumina tambien los
+   bordes de la imagen y aparece un halo transparente en los cuatro costados.
+   translateZ(0) promueve la capa al compositor; sin eso, Chrome deja zonas
+   sin repintar al hacer scroll sobre un elemento fijo y desenfocado.          */
+#fondo {
+  position: fixed;
+  inset: -14vmax;
+  background: url("assets/granja-tomates.jpg") center / cover no-repeat;
+  filter: blur(70px) saturate(1.7) brightness(1.45);
+  transform: translateZ(0);
+  will-change: filter;
+  z-index: -2;
+}
+
+/* Velo oscuro: es lo que hace que el texto blanco pase AAA sobre las manchas
+   verdes y rojas del fondo. Sin el, el contraste se cae en las zonas claras. */
+#velo {
+  position: fixed;
+  inset: 0;
+  transform: translateZ(0);
+  background:
+    radial-gradient(130% 100% at 50% 28%, rgba(12, 8, 4, 0.42), rgba(12, 8, 4, 0.74));
+  z-index: -1;
+}
+
+/* --- Texto reservado a lectores de pantalla ----------------------------- */
+.solo-lectores {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* --- Compuerta de inicio: la pantalla entera es el boton ---------------- */
+#compuerta {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  width: 100%;
+  border: 0;
+  padding: 6vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.1rem;
+  text-align: center;
+  cursor: pointer;
+  color: var(--papel);
+  background: rgba(16, 10, 5, 0.94);
+  font: inherit;
+}
+#compuerta[hidden] { display: none; }
+
+.compuerta-titulo {
+  font-size: clamp(1.9rem, 6vw, 3.4rem);
+  font-weight: 800;
+  line-height: 1.15;
+  max-width: 18ch;
+  text-wrap: balance;
+}
+.compuerta-sub {
+  font-size: clamp(1rem, 2.2vw, 1.3rem);
+  max-width: 46ch;
+  color: #e6d9c6;
+}
+
+/* --- Contenido ---------------------------------------------------------- */
+#contenido {
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 5vw, 4rem) clamp(1.1rem, 5vw, 2rem) 4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.6rem;
+}
+
+.marca {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  /* Amarillo y no rojo: el fondo desenfocado tiene manchas rojas grandes y el
+     rojo sobre rojo se pierde. El amarillo contrasta contra verde y contra rojo. */
+  color: var(--foco);
+}
+
+h1 {
+  margin: 0 0 1rem;
+  font-size: clamp(1.9rem, 5.2vw, 3.1rem);
+  line-height: 1.14;
+  font-weight: 800;
+  text-wrap: balance;
+}
+
+.entrada { margin: 0; max-width: 40ch; }
+
+.estado {
+  margin: 0;
+  padding: 0.9rem 1.15rem;
+  border-left: 6px solid var(--tomate-vivo);
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 0 var(--radio) var(--radio) 0;
+  font-weight: 600;
+}
+
+audio {
+  width: 100%;
+  min-height: 54px;
+  border-radius: var(--radio);
+}
+
+/* --- Botones gigantes de contingencia ----------------------------------- */
+#acciones {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.boton-grande {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+  min-height: 108px;
+  padding: 1.35rem 1.5rem;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: var(--papel);
+  background: #1c120a;
+  border: 3px solid var(--papel);
+  border-radius: var(--radio);
+  transition: transform 0.12s ease, background-color 0.12s ease;
+}
+
+.boton-titulo { font-size: clamp(1.35rem, 3.4vw, 1.8rem); font-weight: 800; line-height: 1.2; }
+.boton-sub    { font-size: clamp(0.95rem, 2vw, 1.05rem); color: #e6d9c6; }
+
+.boton-primario {
+  background: var(--tomate);
+  border-color: var(--tomate-vivo);
+}
+.boton-primario .boton-sub { color: #ffffff; }
+
+.boton-grande:hover  { transform: translateY(-2px); background: #2a1a0f; }
+.boton-primario:hover { background: #9e1e15; }
+
+/* Anillo de foco desmesurado a proposito: es la unica pista visual para quien
+   navega con teclado y baja vision.                                          */
+:focus-visible {
+  outline: 5px solid var(--foco);
+  outline-offset: 4px;
+  border-radius: var(--radio);
+}
+
+.microfono {
+  margin: 0;
+  padding: 0.9rem 1.15rem;
+  border-radius: var(--radio);
+  background: rgba(0, 0, 0, 0.5);
+  border: 2px dashed rgba(253, 246, 236, 0.45);
+  font-size: 1rem;
+}
+.microfono[hidden] { display: none; }
+.microfono.escuchando {
+  border-style: solid;
+  border-color: var(--foco);
+  color: var(--foco);
+  font-weight: 700;
+}
+
+footer {
+  margin-top: 1rem;
+  padding-top: 1.6rem;
+  border-top: 2px solid rgba(253, 246, 236, 0.25);
+  font-size: 0.98rem;
+}
+footer p { margin: 0 0 0.9rem; }
+
+a {
+  color: var(--foco);
+  text-underline-offset: 4px;
+  text-decoration-thickness: 2px;
+}
+a:hover { color: #fff; }
+
+.creditos { color: #cbbba6; font-size: 0.9rem; line-height: 1.55; }
+
+/* --- Preferencias del sistema ------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+  .boton-grande:hover { transform: none; }
+}
+
+/* Modo de alto contraste de Windows: se descartan los fondos decorativos y se
+   deja que el sistema pinte con su propia paleta.                            */
+@media (forced-colors: active) {
+  #fondo, #velo { display: none; }
+  .boton-grande { border: 3px solid ButtonText; }
+}
