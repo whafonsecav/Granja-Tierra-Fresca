@@ -11,13 +11,16 @@
   Destinatario: docente universitario, ciego de nacimiento, usuario
   experto de lector de pantalla (NVDA / JAWS / VoiceOver / Narrador).
 
-  QUÉ ES ESTE CORREO: un botón. Nada más.
+  QUÉ ES ESTE CORREO: una línea y un botón.
 
-  No hay párrafos, ni logo, ni firma, ni imágenes, ni pie de página con
-  enlaces. Cuando el destinatario abre el correo y presiona la tecla K
-  (NVDA: ir al siguiente enlace) o desliza en VoiceOver, solo existe un
-  destino posible. No hay nada que recorrer, nada que descartar, nada
-  entre él y la experiencia.
+  No hay logo, ni firma, ni imágenes, ni pie de página con enlaces. Cuando
+  el destinatario abre el correo y presiona la tecla K (NVDA: ir al
+  siguiente enlace) o desliza en VoiceOver, solo existe un destino
+  posible. No hay nada que recorrer, nada que descartar, nada entre él y
+  la experiencia.
+
+  La línea visible no es decoración: es el texto de vista previa. Ver el
+  comentario que la acompaña más abajo.
 
   ------------------------------------------------------------------
   SOBRE "QUE EL CELULAR LO LEA SOLO"
@@ -75,6 +78,29 @@
     <td align="center" style="padding:32px 12px;">
 
       <table role="presentation" class="contenedor" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px; max-width:600px;">
+
+        <!--
+          UNA LINEA VISIBLE, Y SOLO UNA.
+
+          Existe por una razon practica: en Outlook Web el correo se arma
+          copiando y pegando desde el navegador, y al copiar se pierde todo lo
+          que esta oculto con display:none. El preheader de arriba no
+          sobrevive a ese viaje.
+
+          Esta linea si, porque se ve. Cumple el mismo papel: es el texto que
+          Outlook muestra en la bandeja y que el lector de pantalla narra justo
+          despues del asunto, antes de que el destinatario abra nada.
+
+          No repite el asunto: lo continua. El asunto plantea que aqui hay
+          sonido y no fotos; esta linea dice de que sonido se trata.
+        -->
+        <tr>
+          <td class="relleno" align="center" style="padding:0 30px 26px 30px; font-family:Georgia,'Times New Roman',serif; font-size:20px; line-height:31px; color:#241a10;">
+            Dos minutos de cocina real: el agua sobre la c&aacute;scara, el
+            cuchillo entrando en la pulpa, el aceite caliente. Nada de m&uacute;sica.
+          </td>
+        </tr>
+
         <tr>
           <td class="relleno" align="center" style="padding:0 30px;">
 

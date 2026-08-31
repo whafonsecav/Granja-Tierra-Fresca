@@ -77,56 +77,61 @@ del cuerpo y se perdería el remate.
 
 ---
 
-## Paso a paso del envío
+## Paso a paso del envío desde el correo institucional
 
-### Opción A — Outlook Web (la más simple, y la recomendada)
+El correo de la universidad entra por `poli.edu.co → Ingresar`, pasa por el
+inicio de sesión de Microsoft y abre Outlook Web. Ahí no existe un botón de
+"insertar HTML": el correo se arma copiando y pegando desde el navegador.
 
-Outlook en el navegador no tiene un botón de "insertar HTML". Se usa el
-portapapeles, que conserva el formato:
+Eso tiene una consecuencia que ya está resuelta, pero conviene entenderla: **al
+copiar y pegar se pierde todo lo que esté oculto**. El texto de vista previa
+original iba oculto y no sobrevivía al pegado. Por eso ahora hay una línea
+visible encima del botón que cumple ese papel. No es decoración ni relleno: es
+el texto que Outlook muestra en la bandeja y que el lector de pantalla narra
+justo después del asunto.
 
-1. Abra `correo-outlook.html` en Chrome o en Edge (doble clic sobre el archivo).
-2. `Ctrl + A` para seleccionar todo lo que se ve, y `Ctrl + C` para copiarlo.
-3. En Outlook Web, redacte un correo nuevo y pegue con **`Ctrl + Shift + V`**
-   (pegar manteniendo el formato de origen).
-4. Escriba el asunto de arriba.
-5. Envíese el correo a usted mismo primero. Verifique tres cosas antes de
-   mandarlo de verdad:
-   - que el botón rojo se vea y sea pinchable;
-   - que al pasar el mouse por encima el enlace apunte a
-     `https://whafonsecav.github.io/Granja-Tierra-Fresca/`;
-   - que el correo llegue a Recibidos y no a Correo no deseado.
-6. Ahora sí, envíelo al destinatario.
+### Los pasos
 
-### Opción B — Outlook de escritorio, insertando el archivo como texto
+1. Abra `correo-outlook.html` con doble clic. Se abre en Chrome o Edge y se ve
+   una línea de texto y un botón rojo. Eso es todo el correo.
 
-Esta conserva el HTML sin que el portapapeles lo reescriba:
+2. `Ctrl + A` y luego `Ctrl + C`.
 
-1. Correo nuevo → pestaña **Insertar** → **Adjuntar archivo** →
-   **Examinar este equipo**.
-2. Seleccione `correo-outlook.html`, pero **no pulse Insertar**: abra la flecha
-   del botón y elija **Insertar como texto**.
-3. Escriba el asunto y envíe.
+3. En Outlook Web, **Correo nuevo**. Haga clic dentro del cuerpo del mensaje y
+   pegue con **`Ctrl + Shift + V`**.
 
-### Opción C — Su propio Gmail o cuenta personal
+   Es `Ctrl + Shift + V` y no `Ctrl + V`: el pegado normal aplica el formato del
+   destino y aplana el botón hasta dejarlo como un enlace de texto suelto.
 
-Si el correo institucional le reescribe demasiado el HTML, mándelo desde Gmail
-con la extensión gratuita *HTML Email* o pegando igual que en la Opción A. Gmail
-respeta este HTML sin problema porque no usa el motor de Word.
+4. En Asunto, pegue exactamente esto:
 
----
+   > Este correo no tiene fotos del tomate. Tiene el sonido del tomate.
 
-## Antes de enviar: revisión rápida
+5. **Mándeselo primero a usted mismo.** Antes de enviarlo de verdad, verifique
+   cuatro cosas:
+   - el botón rojo se ve y se puede pulsar;
+   - al pasar el mouse por encima, el enlace apunta a
+     `whafonsecav.github.io/Granja-Tierra-Fresca` (si aparece
+     `safelinks.protection.outlook.com`, es normal: la universidad reescribe
+     todos los enlaces y sigue funcionando);
+   - en la lista de la bandeja, debajo del asunto, se lee la línea de los dos
+     minutos de cocina;
+   - el correo llegó a Recibidos y no a Correo no deseado.
 
-- [ ] El sitio ya está publicado y abre bien en
-      `https://whafonsecav.github.io/Granja-Tierra-Fresca/`
-- [ ] El número de WhatsApp está configurado en `script.js`
-      (constante `NUMERO_WHATSAPP`)
-- [ ] La prueba a usted mismo llegó a Recibidos
-- [ ] Probó el correo con las imágenes bloqueadas: como no hay ninguna imagen,
-      se debe ver exactamente igual
-- [ ] Verificó que en todo el correo hay **un solo enlace**: el botón
-- [ ] Si puede, escuche el correo con el Narrador de Windows
-      (`Ctrl + Windows + Enter`). Es la prueba que de verdad importa.
+6. Escuche esa prueba con el Narrador de Windows (`Ctrl + Windows + Enter`).
+   Recorra la bandeja sin abrir el correo: debe oír el asunto y enseguida la
+   línea de la vista previa. Ese es el arranque de la experiencia, y es la única
+   prueba que de verdad importa.
+
+7. Ahora sí, envíelo al profesor.
+
+### Si el botón se ve mal al pegar
+
+Deshaga con `Ctrl + Z`, borre el borrador y repita desde el paso 2 asegurándose
+de pegar con `Ctrl + Shift + V`. Si aun así se rompe, escriba el correo con el
+enlace en texto plano: pierde el botón, pero el destinatario no ve el botón de
+todos modos. Lo que no puede faltar es que el texto del enlace siga diciendo a
+dónde lleva y cuánto dura.
 
 ## Por qué este correo no debería caer en spam
 
