@@ -62,6 +62,13 @@ CUERPO_MAXIMO = 12.0
 #      recetario en audiolibro por correo. Respeto, no publicidad.
 #   9. La granja se llama Tierra Fresca y quiere mandarle una muestra gratis.
 #  10. Si le gusta, pueden volverse sus proveedores oficiales.
+#
+# El cierre lleva una llamada a la accion explicita, que antes faltaba: el
+# parrafo terminaba en una promesa y no le decia que hacer. Es la misma accion
+# con la que cierra el audio, responder el correo, y a proposito: el PDF se
+# descarga al final de la experiencia pero se lee despues, quiza dias despues,
+# cuando la pagina ya no esta abierta. Responder el correo es lo unico que
+# sigue estando a su alcance en ese momento.
 COPY = (
     "Hola, Carlos. Soy Natalia y, como tú, soy ciega de nacimiento, así que "
     "no tengo que explicarte lo que se siente pedir algo a domicilio y "
@@ -78,8 +85,9 @@ COPY = (
     "en braille, y al correo el mismo recetario en audiolibro. Eso no es "
     "publicidad, es respeto. Se llaman Tierra Fresca, y a ti también quieren "
     "mandarte una muestra gratis para que la pruebes con tus propias manos. "
-    "Si te gusta, y yo sé que sí, pueden volverse tus proveedores oficiales "
-    "de tomate de guiso."
+    "Si te gusta, y yo sé que sí, pueden volverse tus proveedores oficiales. "
+    "Así que anímate: respóndele a su correo aceptando y ellos se encargan de "
+    "todo lo demás. Yo lo hice, y no me arrepiento."
 )
 
 
