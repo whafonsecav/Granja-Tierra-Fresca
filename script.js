@@ -202,6 +202,50 @@
   }
 
   /* =====================================================================
+     Idioma de la voz
+     ===================================================================== */
+
+  var IDIOMAS = window.TIERRA_FRESCA_IDIOMAS || {};
+  var idiomaHablado = "es";   // se ajusta cuando se conoce la voz elegida
+
+  // Orden de preferencia. El espanol primero porque es el idioma de la
+  // campana; despues los que mas se le parecen en fonetica, y el ingles de
+  // ultimo. Un idioma sin voz instalada simplemente no se elige.
+  var PREFERENCIA_IDIOMA = { es: 100, pt: 62, it: 58, fr: 52, en: 46 };
+
+  function codigoDeIdioma(lang) {
+    return String(lang || "").slice(0, 2).toLowerCase();
+  }
+
+  // El idioma en el que se va a hablar, deducido de la voz que se vaya a
+  // usar. Si la voz habla algo que no esta traducido, se cae al espanol.
+  function idiomaDeLaVoz(voz) {
+    var c = voz ? codigoDeIdioma(voz.lang) : "es";
+    return IDIOMAS.hasOwnProperty(c) ? c : "es";
+  }
+
+  // Devuelve el texto de una clave en un idioma, con los marcadores ya
+  // sustituidos. Si a un idioma le falta la clave se usa la espanola: una
+  // traduccion incompleta no puede dejar muda a la pagina.
+  function frase(idioma, clave, datos) {
+    var pack = IDIOMAS[idioma] || IDIOMAS.es || {};
+    var base = IDIOMAS.es || {};
+    var t = pack[clave] !== undefined ? pack[clave] : base[clave];
+    if (t === undefined) { return ""; }
+
+    var gesto = esMovil()
+      ? (pack.gestoMovil || base.gestoMovil)
+      : (pack.gestoEscritorio || base.gestoEscritorio);
+
+    t = t.split("{gesto}").join(gesto || "");
+    t = t.split("{aviso}").join(pack.aviso || base.aviso || "");
+    if (datos && datos.numero !== undefined) {
+      t = t.split("{numero}").join(datos.numero);
+    }
+    return t;
+  }
+
+  /* =====================================================================
      Mantener la pantalla encendida
      ===================================================================== */
 
@@ -248,25 +292,27 @@
      Voz de la pagina
      ===================================================================== */
 
-  // Se puntua cada voz para quedarse con la mas humana de las que hablen
-  // espanol. Las voces neuronales ("Natural", "Neural") y las que se sintetizan
-  // en servidor ("Online", las de Google) suenan muchisimo mas naturales que
-  // las locales clasicas de Windows, que arrastran la cadencia metalica de
-  // SAPI. Una voz que no hable espanol queda descartada de entrada.
+  // Se puntua cada voz por dos cosas: que idioma habla y que tan humana
+  // suena. El idioma pesa mucho mas, porque una voz mediocre que pronuncia
+  // bien se entiende siempre, y una voz excelente en el idioma equivocado no
+  // se entiende nunca.
+  //
+  // Entre las que suenan bien: las neuronales ("Natural", "Neural") y las que
+  // se sintetizan en servidor ("Online", las de Google) le sacan mucha
+  // ventaja a las locales clasicas de Windows, que arrastran la cadencia
+  // metalica de SAPI.
   function puntuarVoz(v) {
-    var lang = v.lang || "";
+    var lang = codigoDeIdioma(v.lang);
     var nombre = v.name || "";
-    var p;
 
-    if (/^es[-_]?(CO|MX|US|AR|CL|PE|419)/i.test(lang)) { p = 40; }      // espanol de America
-    else if (/^es($|[-_])/i.test(lang)) { p = 25; }                     // cualquier espanol
-    else if (/spanish|espanol|español/i.test(nombre)) { p = 10; }       // el motor reporta mal el idioma
-    else { return -1; }
+    // Un idioma sin traduccion vale poco, pero no cero: si es lo unico que
+    // hay en el equipo, mas vale hablar con el que quedarse en silencio.
+    var p = PREFERENCIA_IDIOMA.hasOwnProperty(lang) ? PREFERENCIA_IDIOMA[lang] : 8;
 
-    if (/natural|neural/i.test(nombre)) { p += 30; }
-    if (/^google/i.test(nombre)) { p += 20; }
-    if (/online/i.test(nombre)) { p += 15; }
-    if (v.localService === false) { p += 10; }
+    if (/natural|neural/i.test(nombre)) { p += 12; }
+    if (/^google/i.test(nombre)) { p += 8; }
+    if (/online/i.test(nombre)) { p += 6; }
+    if (v.localService === false) { p += 4; }
 
     return p;
   }
@@ -275,7 +321,7 @@
     if (!TTS) { return null; }
     var voces = TTS.getVoices() || [];
     var mejor = null;
-    var mejorPuntaje = 0;
+    var mejorPuntaje = -1;
     var i, p;
     for (i = 0; i < voces.length; i++) {
       p = puntuarVoz(voces[i]);
@@ -365,20 +411,22 @@
   // ya empieza por una palabra corta que cumple el mismo papel ("Listo.",
   // "Borrado.", "Claro."). El resultado no suena a parche: suena a alguien
   // que enlaza lo que va diciendo.
-  var CONECTORES = ["Bien.", "Listo.", "Ahora.", "A ver."];
   var nConector = 0;
   var yaHabloAlguna = false;
 
-  function conArranqueDesechable(texto) {
+  function conArranqueDesechable(texto, idioma) {
+    var pack = IDIOMAS[idioma] || IDIOMAS.es || {};
+
     if (!yaHabloAlguna) {
       yaHabloAlguna = true;
-      return "Hola. " + texto;
+      return (pack.saludo || "Hola.") + " " + texto;
     }
-    // Si ya empieza por una frase corta terminada en punto ("Listo.",
-    // "Borrado.", "Que alegria.", "Perfecto,"), esa hace de sacrificio.
+    // Si ya empieza por una frase corta terminada en punto o coma, esa hace
+    // de sacrificio y no se anade otra.
     if (/^[^.?!¿¡]{2,18}[.,]\s/.test(texto)) { return texto; }
 
-    var c = CONECTORES[nConector % CONECTORES.length];
+    var lista = pack.conectores || ["Bien."];
+    var c = lista[nConector % lista.length];
     nConector++;
     return c + " " + texto;
   }
@@ -408,9 +456,10 @@
     if (latido) { window.clearInterval(latido); latido = null; }
   }
 
-  function nuevaFrase(texto, voz) {
+  function nuevaFrase(texto, voz, idioma) {
+    var pack = IDIOMAS[idioma || "es"] || IDIOMAS.es || {};
     var f = new window.SpeechSynthesisUtterance(texto);
-    f.lang = "es-CO";
+    f.lang = pack.lang || "es-CO";
     // Sin voz explicita, el motor elige por su cuenta segun el idioma. Es lo
     // que pasa en Edge, que a veces no ha terminado de enumerar las voces.
     if (voz) { f.voice = voz; }
@@ -426,8 +475,14 @@
   // arranque, dice el texto en espanol y solo entonces ejecuta "despues". Es
   // el punto por el que pasa casi toda la voz de la pagina, para que las
   // reglas 1 y 2 del encabezado no dependan de acordarse de aplicarlas.
-  function hablar(texto, despues) {
+  function hablar(clave, despues, datos) {
     detenerMicrofono();
+
+    // Lo que se anuncia por aria-live va SIEMPRE en espanol, pase lo que pase
+    // con la voz sintetica. Ese canal lo lee el lector de pantalla del propio
+    // usuario, que esta en su idioma y no depende de lo que traiga instalado
+    // el navegador. Solo la voz de la pagina se adapta.
+    var texto = frase("es", clave, datos);
     anunciar(texto);
     despertarSalida();
 
@@ -450,16 +505,26 @@
         window.setTimeout(seguir, SILENCIO_INICIAL_MS + tiempoDeLectura(texto));
         return;
       }
+      // Se habla en el idioma de la voz que se va a usar, no en el de la
+      // campana. Una voz inglesa pronunciando ingles se entiende; la misma
+      // voz pronunciando espanol, no.
+      idiomaHablado = idiomaDeLaVoz(voz);
+      var dicho = frase(idiomaHablado, clave, datos);
+
       // El silencio de WebAudio esta sonando durante esta espera. Cuando entra
       // la voz, el dispositivo ya esta abierto.
       window.setTimeout(function () {
-        decirEnVozAlta(conArranqueDesechable(texto), voz, seguir);
+        decirEnVozAlta(conArranqueDesechable(dicho, idiomaHablado),
+                       voz, seguir, idiomaHablado);
       }, SILENCIO_INICIAL_MS);
     });
   }
 
-  function decirEnVozAlta(texto, voz, seguir) {
-    var frase = nuevaFrase(texto, voz);
+  function decirEnVozAlta(texto, voz, seguir, idioma) {
+    // La variable NO se llama "frase": ese nombre lo ocupa la funcion que
+    // resuelve los textos por idioma, y sombrearla aqui dentro seria pedir
+    // un error a gritos.
+    var locucion = nuevaFrase(texto, voz, idioma);
 
     var listo = false;
     function finalizar() {
@@ -471,16 +536,17 @@
       window.setTimeout(seguir, 250);
     }
 
-    frase.onstart = function () { algunaVozSono = true; };
-    frase.onend = finalizar;
-    frase.onerror = finalizar;
+    locucion.onstart = function () { algunaVozSono = true; };
+    locucion.onend = finalizar;
+    locucion.onerror = finalizar;
     // Red de seguridad: en algunos Chrome "onend" no dispara si la pestana
     // pierde el foco. Sin esto el flujo quedaria colgado para siempre.
     window.setTimeout(finalizar, tiempoDeLectura(texto) + 6000);
 
     iniciarLatido();
-    try { TTS.speak(frase); } catch (e) { finalizar(); }
+    try { TTS.speak(locucion); } catch (e) { finalizar(); }
   }
+
 
   // Habla SIN temporizadores y SIN cancelar nada antes.
   //
@@ -494,7 +560,9 @@
   // fallar, va por aqui. Tampoco hace falta el calentamiento contra el
   // recorte: el usuario acaba de tocar la pantalla, asi que el dispositivo de
   // audio ya esta despierto.
-  function hablarDeInmediato(texto, despues) {
+  function hablarDeInmediato(clave, despues, datos) {
+    // Lo que anuncia el lector de pantalla va siempre en espanol.
+    var texto = frase("es", clave, datos);
     anunciar(texto);
 
     function seguir() { if (despues) { despues(); } }
@@ -504,16 +572,21 @@
       return;
     }
 
-    var frase = new window.SpeechSynthesisUtterance(conArranqueDesechable(texto));
-    frase.lang = "es-CO";
-    frase.rate = VELOCIDAD_VOZ;
-    frase.pitch = 1.02;
-    // No se espera a que carguen las voces: con lang en es-CO el motor
-    // escoge por su cuenta. Aqui vale mas hablar de inmediato que hablar con
-    // la voz perfecta, porque esta es la locucion que iOS solo acepta si sale
-    // dentro del gesto.
+    // Aqui no se puede esperar a que terminen de cargar las voces: la
+    // locucion tiene que salir dentro del gesto o iOS la descarta. Se usa la
+    // mejor voz que haya en este preciso instante, y su idioma manda.
     var voz = vozEspanol();
-    if (voz) { frase.voice = voz; }
+    idiomaHablado = idiomaDeLaVoz(voz);
+
+    var pack = IDIOMAS[idiomaHablado] || IDIOMAS.es || {};
+    var dicho = conArranqueDesechable(frase(idiomaHablado, clave, datos),
+                                      idiomaHablado);
+
+    var locucion = new window.SpeechSynthesisUtterance(dicho);
+    locucion.lang = pack.lang || "es-CO";
+    locucion.rate = VELOCIDAD_VOZ;
+    locucion.pitch = 1.02;
+    if (voz) { locucion.voice = voz; }
 
     var listo = false;
     function finalizar() {
@@ -521,13 +594,14 @@
       listo = true;
       window.setTimeout(seguir, 250);
     }
-    frase.onstart = function () { algunaVozSono = true; };
-    frase.onend = finalizar;
-    frase.onerror = finalizar;
+    locucion.onstart = function () { algunaVozSono = true; };
+    locucion.onend = finalizar;
+    locucion.onerror = finalizar;
     window.setTimeout(finalizar, tiempoDeLectura(texto) + 5000);
 
-    try { TTS.speak(frase); } catch (e) { finalizar(); }
+    try { TTS.speak(locucion); } catch (e) { finalizar(); }
   }
+
 
   /* =====================================================================
      Oido de la pagina
@@ -543,8 +617,12 @@
       .trim();
   }
 
-  var PATRON_SI = /\b(si|sii|sip|claro|correcto|dale|listo|bueno|obvio|exacto|afirmativo|supuesto|hagale|ok|okey|vale|quiero|acepto)\b/;
-  var PATRON_NO = /\b(no|nop|nel|negativo|nunca|jamas|tampoco|incorrecto|equivocado)\b/;
+  // Los patrones aceptan los CINCO idiomas a la vez, no solo el que se este
+  // hablando. Cuesta poco y cubre el caso real: la pagina puede terminar
+  // preguntando en ingles, porque es la unica voz que hay en el equipo,
+  // mientras quien responde sigue contestando en espanol.
+  var PATRON_SI = /\b(si|sii|sip|yes|yeah|yep|yup|sure|sim|oui|ouais|ok|okey|okay|claro|correcto|correct|certo|esatto|exact|giusto|dale|listo|bueno|obvio|exacto|afirmativo|positivo|supuesto|hagale|vale|quiero|acepto|accord|isso|right)\b/;
+  var PATRON_NO = /\b(no|nop|nope|nah|nel|nao|non|negativo|nunca|jamas|tampoco|incorrecto|incorrect|equivocado|wrong|sbagliato|faux)\b/;
 
   // Devuelve "si", "no" o null. Si la frase contiene ambas cosas, o ninguna,
   // devuelve null: es preferible volver a preguntar que adivinar mal.
@@ -566,12 +644,22 @@
     return null;
   }
 
+  // Los numeros, en los cinco idiomas. Se mezclan todos en una sola tabla en
+  // vez de tener una por idioma: apenas chocan entre si, y asi un usuario
+  // puede dictar en espanol aunque la pagina le haya preguntado en ingles.
   var UNIDADES = {
     cero: "0", zero: "0",
-    uno: "1", un: "1", una: "1",
-    dos: "2", tres: "3", cuatro: "4", cinco: "5",
-    seis: "6", siete: "7", ocho: "8", nueve: "9"
+    uno: "1", un: "1", una: "1", one: "1", um: "1",
+    dos: "2", two: "2", dois: "2", due: "2", deux: "2",
+    tres: "3", three: "3", tre: "3", trois: "3",
+    cuatro: "4", four: "4", quatro: "4", quattro: "4", quatre: "4",
+    cinco: "5", five: "5", cinque: "5", cinq: "5",
+    seis: "6", six: "6", sei: "6",
+    siete: "7", seven: "7", sete: "7", sette: "7", sept: "7",
+    ocho: "8", eight: "8", oito: "8", otto: "8", huit: "8",
+    nueve: "9", nine: "9", nove: "9", neuf: "9"
   };
+
 
   // Diciendo el celular de corrido, el motor casi nunca devuelve digitos
   // sueltos: agrupa. "tres cero cero" puede volver como "300", y "treinta y
@@ -617,7 +705,7 @@
   // bastaba para que la peticion cayera al sino y terminara guardando el
   // numero. Con la raiz quedan cubiertas repita, repitelo, repitamelo,
   // repiteme, repetir y las demas sin tener que preverlas una por una.
-  var PATRON_REPETIR = /\b(repit\w*|repet\w*|vuelv\w* a (decir|leer)|otra vez|de nuevo|nuevamente|no escuche|no oi|no entendi|que dijo|como dijo)\b/;
+  var PATRON_REPETIR = /\b(repit\w*|repet\w*|ripet\w*|repeat|again|de novo|encore|ancora|vuelv\w* a (decir|leer)|otra vez|de nuevo|nuevamente|no escuche|no oi|no entendi|que dijo|como dijo)\b/;
   var PATRON_LISTO  = /\b(listo|ya|termine|termina|es todo|nada mas|ya esta|fin)\b/;
 
   // Lee los digitos de a uno, con una pausa mas larga cada tres. De corrido,
@@ -663,7 +751,12 @@
       return;
     }
 
-    reconocimiento.lang = "es-CO";
+    // Se escucha en el mismo idioma en que se pregunto. Preguntar en un
+    // idioma y escuchar en otro degrada mucho la transcripcion: "si" dictado
+    // a un reconocedor en ingles suele volver como "see". Los patrones de
+    // arriba aceptan los cinco de todas formas, por si la persona contesta
+    // en otro.
+    reconocimiento.lang = (IDIOMAS[idiomaHablado] || IDIOMAS.es || {}).lang || "es-CO";
     reconocimiento.continuous = true;
     reconocimiento.interimResults = false;
     reconocimiento.maxAlternatives = 3;
@@ -724,12 +817,7 @@
     // importa: el que le dice que su numero quedo registrado.
     if (estado === "FIN") { return; }
     yaAvisoTeclado = true;
-    hablar(
-      "No puedo usar el micrófono, así que vamos por el teclado. " +
-      "Presiona la tecla ese para decir sí, y la tecla ene para decir no. " +
-      "Cuando te pida tu celular, márcalo con las teclas de números. " +
-      "Y si quieres que te repita el número, presiona la tecla erre."
-    );
+    hablar("soloTeclado");
   }
 
   /* =====================================================================
@@ -831,17 +919,10 @@
      ESTADO 1 — Espera del gesto
      ===================================================================== */
 
-  // El aviso del microfono va aqui y en ningun otro lado. Antes se decia dos
-  // veces, una antes del gesto y otra al tocar, y sonaba a que la pagina se
-  // repetia sola.
-  var AVISO_PREGUNTAS =
-    "Al final te haré unas preguntas muy breves que podrás responder con tu " +
-    "micrófono. Cuando el navegador te pida permiso, actívalo.";
-
+  // El texto del aria-label va SIEMPRE en espanol: lo lee el lector de
+  // pantalla del propio usuario, no la voz del navegador.
   function textoDeArranque() {
-    var gesto = esMovil() ? "Toca la pantalla" : "Oprime cualquier tecla";
-    return "Tenemos un mensaje especial para ti. " + gesto +
-           " para escucharlo. " + AVISO_PREGUNTAS;
+    return frase("es", "bienvenida");
   }
 
   function prepararArranque() {
@@ -863,7 +944,7 @@
     // Antes esto estaba apagado en movil por completo, para evitar que la
     // frase en cola se soltara encima del mensaje del toque. Fue un exceso:
     // apago tambien Android, donde funcionaba bien.
-    hablar(texto);
+    hablar("bienvenida");
   }
 
   // Arranca y pausa el audio en el acto, para dejarlo desbloqueado. Solo se
@@ -923,8 +1004,7 @@
       // despues ya no se rechaza.
       desbloquearAudio();
 
-      hablarDeInmediato("Tenemos un mensaje especial para ti. " +
-                        AVISO_PREGUNTAS + " Aquí va.", reproducir);
+      hablarDeInmediato("puente", reproducir);
       return;
     }
 
@@ -957,11 +1037,7 @@
   audio.addEventListener("ended", function () { preguntarRepetir(); });
 
   audio.addEventListener("error", function () {
-    hablar(
-      "No fue posible cargar el audio, y te pido disculpas. " +
-      "De todas formas quisiera saber si quieres contactar a Tierra Fresca.",
-      preguntarContacto
-    );
+    hablar("errorAudio", preguntarContacto);
   });
 
   /* =====================================================================
@@ -971,10 +1047,7 @@
   function preguntarRepetir() {
     estado = "PREGUNTA_REPETIR";
     reintentos = 0;
-    hablar(
-      "¿Quieres escuchar el mensaje otra vez? Responde sí, o no.",
-      function () { escuchar(oirSiNo); }
-    );
+    hablar("preguntaRepetir", function () { escuchar(oirSiNo); });
   }
 
   /* =====================================================================
@@ -984,10 +1057,7 @@
   function preguntarContacto() {
     estado = "PREGUNTA_CONTACTO";
     reintentos = 0;
-    hablar(
-      "¿Quieres contactar a Tierra Fresca? Responde sí, o no.",
-      function () { escuchar(oirSiNo); }
-    );
+    hablar("preguntaContacto", function () { escuchar(oirSiNo); });
   }
 
   // Manejador compartido por los estados de pregunta cerrada.
@@ -1011,12 +1081,9 @@
       if (reintentos >= 3) {
         // Tres intentos fallidos: seguir insistiendo seria maltratarlo.
         reintentos = 0;
-        hablar(
-          "No logro entenderte, y la culpa es mía, no tuya. " +
-          "Si estás en un computador, presiona la tecla ese para sí, " +
-          "o la tecla ene para no.",
-          function () { escuchar(enConfirmacion ? oirConfirmacion : oirSiNo); }
-        );
+        hablar("noEntiendo", function () {
+          escuchar(enConfirmacion ? oirConfirmacion : oirSiNo);
+        });
       }
       return false;
     }
@@ -1029,7 +1096,7 @@
     reintentos = 0;
 
     if (estado === "PREGUNTA_REPETIR") {
-      if (r === "si") { hablar("Con mucho gusto. Aquí va otra vez.", reproducir); }
+      if (r === "si") { hablar("repitiendo", reproducir); }
       else { preguntarContacto(); }
       return;
     }
@@ -1051,7 +1118,7 @@
         // "No" borra el numero entero. Se dice que se borro y se vuelve a
         // pedir en la MISMA frase: encadenar dos locuciones dejaria al
         // usuario varios segundos en silencio sin saber si hablar o esperar.
-        pedirNumero("Borrado.");
+        pedirNumero("numeroBorrado");
       }
     }
   }
@@ -1065,22 +1132,22 @@
   // numero en la MISMA frase: encadenar dos locuciones ("lo borre" y despues
   // "digame el numero") deja al usuario varios segundos en silencio sin saber
   // si tiene que hablar o esperar.
-  function pedirNumero(preludio) {
+  // "clave" dice cual de los tres pedidos toca: el largo de la primera vez,
+  // el de despues de borrar, o el de cuando faltaron digitos. Los tres dicen
+  // que paso y vuelven a pedir el numero en la MISMA frase: encadenar dos
+  // locuciones dejaria al usuario varios segundos en silencio sin saber si
+  // tiene que hablar o esperar.
+  function pedirNumero(clave) {
     estado = "CAPTURA_NUMERO";
     digitos = [];
     reintentos = 0;
 
-    var texto = preludio
-      ? preludio + " Dime tu número de celular completo otra vez, por favor."
-      : "Qué alegría. Dime tu número de celular completo, de corrido y " +
-        "con calma. Yo te lo repito al final para que me confirmes que " +
-        "quedó bien.";
-
-    hablar(texto, function () {
+    hablar(clave || "pedirNumero", function () {
       escuchar(oirNumero);
       esperarFinDelDictado();
     });
   }
+
 
   // No se interrumpe al usuario mientras dicta: el microfono queda abierto de
   // principio a fin. Ver regla 2 del encabezado.
@@ -1126,14 +1193,14 @@
 
   function reiniciarNumero() {
     window.clearTimeout(relojDictado);
-    pedirNumero("Borrado.");
+    pedirNumero("numeroBorrado");
   }
 
   function cerrarCaptura() {
     window.clearTimeout(relojDictado);
     detenerMicrofono();
     if (digitos.length < MINIMO_DIGITOS) {
-      pedirNumero("Me faltaron números.");
+      pedirNumero("numeroFaltaron");
       return;
     }
     confirmarNumero();
@@ -1146,12 +1213,8 @@
   function confirmarNumero() {
     estado = "CONFIRMA_NUMERO";
     reintentos = 0;
-    hablar(
-      "El número que entendí es: " + leerDigitos(digitos) + ". " +
-      "Si está correcto, di sí. Si está mal, di no, y lo tomamos otra vez. " +
-      "Y si prefieres que te lo repita, dime: repítelo.",
-      function () { escuchar(oirConfirmacion); }
-    );
+    hablar("confirmar", function () { escuchar(oirConfirmacion); },
+           { numero: leerDigitos(digitos) });
   }
 
   // Manejador propio de la confirmacion.
@@ -1173,11 +1236,8 @@
   function repetirNumero() {
     detenerMicrofono();
     reintentos = 0;
-    hablar(
-      "Claro. Escúchalo otra vez: " + leerDigitos(digitos) + ". " +
-      "¿Está correcto? Di sí, o no.",
-      function () { escuchar(oirConfirmacion); }
-    );
+    hablar("repetirNumero", function () { escuchar(oirConfirmacion); },
+           { numero: leerDigitos(digitos) });
   }
 
   /* =====================================================================
@@ -1239,30 +1299,18 @@
     if (ABRIR_WHATSAPP_AL_CONFIRMAR && /^\d{10,15}$/.test(NUMERO_WHATSAPP)) {
       var url = "https://wa.me/" + NUMERO_WHATSAPP +
                 "?text=" + encodeURIComponent(MENSAJE_WHATSAPP);
-      hablar(
-        "Perfecto. Te voy a abrir WhatsApp con el mensaje ya escrito, " +
-        "para que solo tengas que pulsar enviar.",
-        function () { window.location.href = url; }
-      );
+      hablar("whatsapp", function () { window.location.href = url; });
       window.setTimeout(function () { window.location.href = url; }, 9000);
       return;
     }
 
-    hablar(
-      "Listo. Tu número ya quedó registrado. " +
-      "Uno de nuestros aliados se va a comunicar contigo para coordinar " +
-      "tu envío.",
-      preguntarPdf
-    );
+    hablar("registrado", preguntarPdf);
   }
 
   function despedirse() {
     window.clearTimeout(relojDictado);
     detenerMicrofono();
-    hablar(
-      "Con mucho gusto. Gracias por darnos un rato de tu tiempo y de tu atención.",
-      preguntarPdf
-    );
+    hablar("despedida", preguntarPdf);
   }
 
   /* =====================================================================
@@ -1277,12 +1325,7 @@
   function preguntarPdf() {
     estado = "PREGUNTA_PDF";
     reintentos = 0;
-    hablar(
-      "Una última cosa. ¿Quieres descargar nuestra propuesta? " +
-      "Es un solo párrafo, de diez líneas, escrito para que tu lector de " +
-      "pantalla te lo lea de corrido. Responde sí, o no.",
-      function () { escuchar(oirSiNo); }
-    );
+    hablar("preguntaPdf", function () { escuchar(oirSiNo); });
   }
 
   function terminar(conPdf) {
@@ -1294,17 +1337,11 @@
       // de tecla cuando la respuesta vino del teclado, y el navegador la trata
       // como una accion del usuario en vez de bloquearla.
       descargarPdf();
-      hablar(
-        "Listo, ya lo tienes en tu carpeta de descargas. " +
-        "Que ese guiso te quede como en casa. Hasta pronto."
-      );
+      hablar("cierreConPdf");
       return;
     }
 
-    hablar(
-      "Perfecto, te lo dejo así. " +
-      "Que ese guiso te quede como en casa. Hasta pronto."
-    );
+    hablar("cierreSinPdf");
   }
 
   /* =====================================================================

@@ -120,6 +120,7 @@ ESPERA_GESTO ──gesto──> REPRODUCIENDO ──fin del audio──> PREGUNT
 
 ```
 index.html                          la experiencia (pantalla vacía)
+idiomas.js                          los textos de la voz, en cinco idiomas
 style.css                           fondo desenfocado, nada más
 script.js                           máquina de estados: audio, voz, micrófono
 audio/experiencia.mp3               pista ASMR (1 min 44 s)
@@ -255,44 +256,47 @@ Si el micrófono siguiera abierto mientras la página habla, se escucharía a s�
 misma y entraría en bucle. El código serializa: sintetiza, espera el `onend`, y
 solo entonces enciende el micrófono. Lo mismo al reproducir el audio ASMR.
 
-### La voz guía habla español, o se calla
+### La voz habla en el idioma de la voz disponible, no en el de la campaña
 
-Cada voz disponible se puntúa para quedarse con la más humana de las que hablen
-español. Las voces neuronales (*Natural*, *Neural*) y las que se sintetizan en
-servidor (*Online*, las de Google) suenan muchísimo mejor que las locales
-clásicas de Windows, que arrastran la cadencia metálica de SAPI. Una voz que no
-hable español queda descartada de entrada.
+La voz sintética no la pone la página: la pone el equipo, y cada equipo trae
+las suyas. Windows suele venir solo con voces en inglés; Chrome trae las
+propias de Google, con español incluido; Edge usa únicamente las del sistema; y
+un iPhone configurado en inglés no trae ninguna en español.
 
-**Si el equipo no tiene ninguna voz española instalada, la página no sintetiza.**
-Una voz inglesa leyendo español se entiende peor que el silencio. En ese caso
-deja el mensaje en la región `aria-live` y lo narra el lector de pantalla del
-propio usuario, que sí está en español y a su velocidad de siempre.
+Eso hacía que la misma página sonara bien en Chrome y mal en Edge, en el mismo
+computador. Hubo dos intentos antes de dar con la solución:
 
-Para instalar voces en español en Windows:
-**Configuración → Hora e idioma → Voz → Administrar voces → Agregar voces →
-Español**.
+1. **Callar si no hay voz española.** El argumento era que una voz inglesa
+   leyendo español se entiende peor que el silencio. Cierto, pero para quien
+   usa la página eso no es una decisión de calidad: es una página rota.
+2. **Hablar español igual, con la voz que haya.** Audible, sí, pero suena a
+   máquina leyendo un idioma que no sabe.
 
-### En celular la voz no puede hablar antes del primer toque
+Lo que funciona es no pelear con la voz disponible sino **hablarle en su
+idioma**. Los textos están traducidos a cinco —español, inglés, portugués,
+italiano y francés— en [`idiomas.js`](idiomas.js). La página puntúa las voces
+del equipo, se queda con la mejor, y dice la guía en el idioma de esa voz. Si
+solo hay una voz inglesa, la guía se oye en inglés bien pronunciado.
 
-iOS y Android prohíben que una página emita sonido — audio *y* voz sintética —
-mientras no haya recibido un gesto del usuario. No hay forma de saltárselo.
+El orden de preferencia pone el español primero, por ser el idioma de la
+campaña, y después los que más se le parecen fonéticamente. El idioma pesa
+mucho más que la calidad de la voz: una voz mediocre que pronuncia bien se
+entiende siempre, y una voz excelente en el idioma equivocado no se entiende
+nunca.
 
-Eso obliga a un reparto claro:
+**Lo que nunca cambia de idioma** es todo lo demás: el audio de Natalia, el
+PDF, el correo y cuanto anuncia la región `aria-live`. Ese canal lo lee el
+lector de pantalla del propio usuario, que está en su idioma y no depende de lo
+que traiga instalado el navegador.
 
-- **Antes del toque**, el único canal es el lector de pantalla del usuario. La
-  superficie de arranque recibe el foco y su `aria-label` dice qué hacer y qué
-  va a pasar: *«Toque la pantalla para escuchar la experiencia de la Granja
-  Tierra Fresca. Al finalizar le haremos unas preguntas muy breves.»*
-- **En el instante del toque**, en móvil, la voz dice lo que no pudo decir
-  antes y entra la experiencia. En computador no se repite, porque allí sí se
-  escuchó al cargar.
+Los patrones de reconocimiento aceptan los cinco idiomas a la vez, no solo el
+que se esté hablando. Cuesta poco y cubre el caso real: la página puede acabar
+preguntando en inglés, porque es la única voz del equipo, mientras quien
+responde sigue contestando en español.
 
-Hay una trampa más de iOS: la **primera** llamada a `speak()` tiene que ocurrir
-de forma síncrona dentro del manejador del gesto. Si pasa por un `setTimeout`
-—como hace `hablar()` para dejar su silencio inicial— el navegador la descarta
-y el motor de voz queda mudo el resto de la sesión. Por eso, en el toque se
-dispara primero una frase a volumen cero, sin temporizador de por medio, cuyo
-único trabajo es desbloquear el motor.
+Para agregar un idioma basta con una entrada nueva en `idiomas.js`. Si le falta
+alguna clave se usa la española: una traducción incompleta no puede dejar muda
+a la página.
 
 ### El arranque recortado, y una solución que salió peor que el problema
 
