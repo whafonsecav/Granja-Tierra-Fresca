@@ -84,6 +84,15 @@
   var ENDPOINT_REGISTRO =
     "https://script.google.com/macros/s/AKfycbxFqFEXw0ZI7rv9d-eOJbSiLWLF3ATxZbGpsCk0KiXroUSGDi3oJgH0GalBz-ZLt9fn/exec";
 
+  // Velocidad de la voz. En escritorio va mas rapida: las voces de Windows
+  // son de por si pausadas y a velocidad nominal se hacen eternas. En movil
+  // se deja en 1, porque los motores de Android e iOS ya leen mas agil y
+  // acelerarlos los vuelve atropellados.
+  //
+  // tiempoDeLectura() la tiene en cuenta: si no, la pagina esperaria de mas
+  // en el camino sin sintesis y quedaria en silencio sin razon.
+  var VELOCIDAD_VOZ = esMovil() ? 1 : 1.25;
+
   var DIGITOS_CELULAR = 10;   // Colombia: 10 digitos
   var MINIMO_DIGITOS  = 7;
 
@@ -151,7 +160,12 @@
       if (!contexto) { contexto = new AC(); }
       if (contexto.state === "suspended") { contexto.resume(); }
 
-      var muestras = Math.ceil(contexto.sampleRate * (SILENCIO_INICIAL_MS / 1000));
+      // El silencio dura mas que la espera previa a hablar, a proposito: si
+      // terminara justo cuando arranca la voz, el dispositivo ya estaria
+      // cerrandose y el recorte volveria. Tiene que seguir sonando por
+      // debajo mientras entra la primera silaba.
+      var duracion = (SILENCIO_INICIAL_MS + 2000) / 1000;
+      var muestras = Math.ceil(contexto.sampleRate * duracion);
       var buffer = contexto.createBuffer(1, muestras, contexto.sampleRate);
       var datos = buffer.getChannelData(0);
       var i;
@@ -276,7 +290,7 @@
   // Estimacion de cuanto tarda en leerse un texto en voz alta. Se usa cuando
   // no hay sintesis y hay que darle margen al lector de pantalla del usuario.
   function tiempoDeLectura(texto) {
-    return Math.min(20000, 1400 + texto.length * 58);
+    return Math.min(20000, 1400 + (texto.length * 58) / VELOCIDAD_VOZ);
   }
 
   // ---------------------------------------------------------------------
@@ -299,32 +313,50 @@
   //      pausa y no la primera silaba de la primera palabra.
   //
   // ---------------------------------------------------------------------
-  // El arranque recortado, y por que se resuelve con un saludo
+  // El arranque recortado: pasa en TODAS las frases, no solo en la primera
   // ---------------------------------------------------------------------
-  // Los motores de voz se comen el principio de la primera frase de la
-  // sesion. La causa es que el dispositivo de salida esta dormido y tarda
-  // unos 300 milisegundos en abrir, y ese tiempo se lo lleva el audio.
+  // El motor de voz se come el principio de cada locucion que llega despues
+  // de un silencio. Y entre una frase y otra de esta pagina siempre hay
+  // silencio: mientras suena el audio, mientras el usuario contesta. Asi que
+  // el problema no es del arranque de la sesion, es de cada turno.
   //
-  // Se probaron dos remedios que no sirven, y conviene dejarlos anotados:
+  // Tres remedios que NO sirven, y conviene dejarlos anotados para no
+  // repetirlos:
   //
   //   - Anteponer comas o puntos para que el recorte se coma una pausa.
   //     Varios motores de celular VERBALIZAN los signos: la pagina decia
-  //     "coma, coma, coma" antes de cada frase. Inaceptable.
+  //     "coma, coma, coma". Inaceptable.
   //
   //   - Una frase de calentamiento a volumen cero. Con volumen cero el motor
-  //     no llega a abrir el canal de audio, asi que no despierta nada; y
-  //     encima anadia una segunda locucion en cola, que en Chrome es otra
-  //     causa conocida de recorte.
+  //     ni siquiera abre el canal de audio, asi que no despierta nada.
   //
-  // Lo que si funciona: que la primera frase empiece por una palabra de
-  // verdad que se pueda perder sin consecuencias. Si el sistema se come 300
-  // milisegundos, se come parte de "Hola" y el mensaje llega entero. No
-  // depende de como interprete el motor la puntuacion, que era el problema
-  // de los otros dos intentos.
+  //   - Ponerle el saludo solo a la primera frase. Arregla una de diez.
   //
-  // De la segunda frase en adelante ya no hace falta: el usuario ya toco la
-  // pantalla, y con ese gesto despertarSalida() si puede abrir el canal.
+  // Lo que si funciona: que CADA frase empiece por una palabra de verdad que
+  // se pueda perder sin consecuencias. Si el sistema se come 300
+  // milisegundos, se come "Bien" y la pregunta llega entera.
+  //
+  // Se rotan varias para que no suene a muletilla, y se omite cuando la frase
+  // ya empieza por una palabra corta que cumple el mismo papel ("Listo.",
+  // "Borrado.", "Claro."). El resultado no suena a parche: suena a alguien
+  // que enlaza lo que va diciendo.
+  var CONECTORES = ["Bien.", "Listo.", "Ahora.", "A ver."];
+  var nConector = 0;
   var yaHabloAlguna = false;
+
+  function conArranqueDesechable(texto) {
+    if (!yaHabloAlguna) {
+      yaHabloAlguna = true;
+      return "Hola. " + texto;
+    }
+    // Si ya empieza por una frase corta terminada en punto ("Listo.",
+    // "Borrado.", "Que alegria.", "Perfecto,"), esa hace de sacrificio.
+    if (/^[^.?!¿¡]{2,18}[.,]\s/.test(texto)) { return texto; }
+
+    var c = CONECTORES[nConector % CONECTORES.length];
+    nConector++;
+    return c + " " + texto;
+  }
 
   // Cierto en cuanto el motor de voz EMPIEZA a hablar de verdad, no cuando se
   // le pide que hable. La diferencia importa: Android Chrome deja hablar sin
@@ -332,12 +364,6 @@
   // quien arranco, cada plataforma da lo mejor que puede sin que haya que
   // adivinar por el user agent.
   var algunaVozSono = false;
-
-  function conSaludoSiEsLaPrimera(texto) {
-    if (yaHabloAlguna) { return texto; }
-    yaHabloAlguna = true;
-    return "Hola. " + texto;
-  }
 
   var latido = null;
 
@@ -363,7 +389,7 @@
     f.voice = voz;
     // 0.95 y 1.02: apenas por debajo de la velocidad nominal y apenas por
     // encima del tono neutro. Es lo que menos suena a maquina leyendo.
-    f.rate = 0.95;
+    f.rate = VELOCIDAD_VOZ;
     f.pitch = 1.02;
     f.volume = 1;
     return f;
@@ -398,7 +424,7 @@
       // El silencio de WebAudio esta sonando durante esta espera. Cuando entra
       // la voz, el dispositivo ya esta abierto.
       window.setTimeout(function () {
-        decirEnVozAlta(conSaludoSiEsLaPrimera(texto), voz, seguir);
+        decirEnVozAlta(conArranqueDesechable(texto), voz, seguir);
       }, SILENCIO_INICIAL_MS);
     });
   }
@@ -449,9 +475,9 @@
       return;
     }
 
-    var frase = new window.SpeechSynthesisUtterance(conSaludoSiEsLaPrimera(texto));
+    var frase = new window.SpeechSynthesisUtterance(conArranqueDesechable(texto));
     frase.lang = "es-CO";
-    frase.rate = 0.95;
+    frase.rate = VELOCIDAD_VOZ;
     frase.pitch = 1.02;
     // Si la lista de voces todavia no ha cargado no se espera: con lang en
     // es-CO el motor escoge una voz espanola por su cuenta. Aqui vale mas
