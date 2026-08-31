@@ -67,6 +67,14 @@ var REPO_NOMBRE = 'Granja-Tierra-Fresca';
 var REPO_RAMA   = 'main';
 var ARCHIVO     = 'registros.json';
 
+// ID de la hoja de calculo. Es el tramo largo de su URL, entre /d/ y /edit:
+//   docs.google.com/spreadsheets/d/ESTO_DE_AQUI/edit
+//
+// Hace falta porque este proyecto de Apps Script es independiente, no esta
+// creado desde dentro de la hoja. En un proyecto independiente
+// getActiveSpreadsheet() devuelve nulo y no encontraria la hoja nunca.
+var HOJA_ID = '';   // pegue aqui el ID de su hoja
+
 // Nombre de la pestaña de la hoja. Si le cambia el nombre, cámbielo aquí.
 var PESTANA = 'Registros';
 
@@ -144,8 +152,29 @@ function leerPeticion(e) {
 // Hoja de cálculo
 // --------------------------------------------------------------------------
 
+// Abre la hoja funcione como funcione el proyecto: si esta creado desde la
+// hoja, getActiveSpreadsheet() la devuelve; si es independiente, devuelve nulo
+// y hay que abrirla por su ID.
+function abrirLibro() {
+  var libro = null;
+  try { libro = SpreadsheetApp.getActiveSpreadsheet(); } catch (e) { libro = null; }
+  if (libro) { return libro; }
+
+  if (!HOJA_ID) {
+    throw new Error('Proyecto independiente y HOJA_ID vacio. Pegue el ID de ' +
+                    'su hoja en la constante HOJA_ID.');
+  }
+  try {
+    return SpreadsheetApp.openById(HOJA_ID);
+  } catch (e) {
+    throw new Error('No pude abrir la hoja con ese HOJA_ID. Copielo de nuevo ' +
+                    'desde la URL de su hoja, entre /d/ y /edit. Detalle: ' + e);
+  }
+}
+
+
 function guardarEnHoja(fecha, numero) {
-  var libro = SpreadsheetApp.getActiveSpreadsheet();
+  var libro = abrirLibro();
   var hoja = libro.getSheetByName(PESTANA) || libro.getSheets()[0];
 
   if (hoja.getLastRow() === 0) {
@@ -250,5 +279,14 @@ function probar() {
   var respuesta = doPost({
     postData: { contents: JSON.stringify({ numero: '3001234567' }) }
   });
-  Logger.log(respuesta.getContent());
+  var texto = respuesta.getContent();
+  Logger.log(texto);
+
+  // Se lee el resultado y se traduce a algo legible, para no tener que
+  // interpretar el JSON crudo en el registro de ejecucion.
+  var r = JSON.parse(texto);
+  if (r.hoja)   { Logger.log('HOJA: escrita. Revise la fila nueva.'); }
+  else          { Logger.log('HOJA: FALLO -> ' + r.error); }
+  if (r.github) { Logger.log('GITHUB: escrito en registros.json.'); }
+  else          { Logger.log('GITHUB: FALLO -> ' + r.errorGitHub); }
 }
