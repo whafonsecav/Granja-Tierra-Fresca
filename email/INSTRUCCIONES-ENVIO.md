@@ -43,17 +43,26 @@ campos que el sistema le lee solo.
 
 Use este:
 
-> **Este correo no tiene fotos del tomate. Tiene el sonido del tomate.**
+> **Tenemos un mensaje especial para ti**
 
-Es disruptivo justamente en el canal en el que él vive: rompe la expectativa de
-"correo comercial con imágenes" en la primera frase que oye, y anuncia el
-beneficio en la segunda. Tiene 62 caracteres, así que no se corta en la vista de
-lista de Outlook ni en la del celular.
+Cuatro razones por las que es este y no otro:
 
-Alternativas, por si quiere variar:
+- **No revela el producto.** Un asunto que empiece por "tomate" o "granja" se
+  clasifica solo como publicidad antes de terminar de leerse. Este obliga a
+  abrir para saber de qué se trata.
+- **Es corto.** Treinta y cinco caracteres: no se corta en ninguna vista de
+  bandeja, ni en el celular. El lector de pantalla lo lee entero de un tirón.
+- **Tutea.** Es lo mismo que hace la voz de la página, así que el tono no
+  cambia a mitad de camino.
+- **Es literalmente la primera frase que va a oír al entrar.** La página abre
+  diciendo "Tenemos un mensaje especial para ti". Ese eco no es pereza: le
+  confirma, sin verlo, que llegó al sitio correcto.
 
-- *No le vamos a describir el tomate. Se lo vamos a hacer oír.* (58 caracteres)
-- *Profesor Carlos: dos minutos de cocina, sin una sola imagen.* (58 caracteres)
+Alternativas, por si prefiere otro tono:
+
+- *Grabamos dos minutos pensando en ti.* (38 caracteres, más cálido)
+- *Un mensaje que preferimos que escuches, no que leas.* (52 caracteres,
+  más intrigante; insinúa el diseño sonoro sin condescendencia)
 
 Tres cosas que **no** debe hacer con el asunto:
 
@@ -98,10 +107,13 @@ justo después del asunto.
 2. `Ctrl + A` y luego `Ctrl + C`.
 
 3. En Outlook Web, **Correo nuevo**. Haga clic dentro del cuerpo del mensaje y
-   pegue con **`Ctrl + Shift + V`**.
+   pegue con **`Ctrl + V`**, el pegado normal.
 
-   Es `Ctrl + Shift + V` y no `Ctrl + V`: el pegado normal aplica el formato del
-   destino y aplana el botón hasta dejarlo como un enlace de texto suelto.
+   Ojo con esto, porque es al revés de lo que uno esperaría: en Outlook Web
+   `Ctrl + Shift + V` pega como **texto plano** y destruye el botón. El que
+   conserva el formato es el `Ctrl + V` corriente. Si aparece el botón flotante
+   `(Ctrl)` justo después de pegar, ábralo y elija **Mantener formato de
+   origen**.
 
 4. En Asunto, pegue exactamente esto:
 
@@ -127,8 +139,9 @@ justo después del asunto.
 
 ### Si el botón se ve mal al pegar
 
-Deshaga con `Ctrl + Z`, borre el borrador y repita desde el paso 2 asegurándose
-de pegar con `Ctrl + Shift + V`. Si aun así se rompe, escriba el correo con el
+Deshaga con `Ctrl + Z` hasta que el cuerpo quede vacío, y repita desde el paso 2
+asegurándose de pegar con `Ctrl + V`, no con `Ctrl + Shift + V`. Si aun así se
+rompe, escriba el correo con el
 enlace en texto plano: pierde el botón, pero el destinatario no ve el botón de
 todos modos. Lo que no puede faltar es que el texto del enlace siga diciendo a
 dónde lleva y cuánto dura.
