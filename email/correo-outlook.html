@@ -88,52 +88,74 @@
 
 <table role="presentation" class="fondo" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#ffffff;">
   <tr>
-    <td align="center" style="padding:44px 12px;">
+    <td align="center" style="padding:56px 14px;">
 
       <table role="presentation" class="contenedor" width="560" cellpadding="0" cellspacing="0" border="0" style="width:560px; max-width:560px;">
         <tr>
           <td class="relleno" align="center" style="padding:0 30px;">
 
             <!--
-              EL BOTÓN. Un enlace real dentro de una celda con color de
-              fondo: no es imagen y no es VML. Se ve en Outlook, se
-              alcanza con Tab, y el lector de pantalla lo anuncia como
-              enlace con su texto completo.
+              EL BLOQUE. Un enlace real dentro de una celda con color de
+              fondo: no es imagen y no es VML. Se ve en Outlook, se alcanza
+              con Tab, y el lector de pantalla lo anuncia como enlace.
 
-              El texto no dice "haz clic aquí", que a un lector de
-              pantalla no le comunica nada, ni describe el producto, que
-              arruinaría la sorpresa. Dice qué le espera, cuánto dura y
-              qué hacer.
+              Sobre el diseño, que aquí no es decoración gratuita: la pieza
+              tiene un solo elemento, así que ese elemento carga con toda la
+              credibilidad de la marca. Un rectángulo plano con una frase
+              dentro parece un correo improvisado; con jerarquía tipográfica,
+              aire y una línea que separe, parece una marca que existe.
 
-              LO QUE NO SE VE, Y ES LO QUE GUÍA AL DESTINATARIO:
+              Tres decisiones concretas:
 
-              El atributo aria-label reemplaza el texto del enlace para
-              el lector de pantalla, y ahí va la instrucción completa:
-              qué es, cuánto dura, que se escucha en vez de leerse, y que
-              se abre con Enter. En pantalla siguen siendo dos líneas
-              cortas; al oído es una indicación entera.
+                - Rojo #a81f18, más profundo que un rojo puro. Los rojos
+                  saturados leen como alerta o descuento; este lee como
+                  tomate maduro.
+                - Dos niveles de texto separados por una línea fina: la
+                  promesa arriba, en serif y grande; la instrucción abajo, en
+                  versalitas espaciadas. Es la estructura de una tarjeta, no
+                  la de un botón.
+                - Mucho aire alrededor. El espacio vacío es lo que separa una
+                  pieza cuidada de una hecha con afán.
 
-              Funciona en Outlook Web, Gmail y Apple Mail, que renderizan
-              HTML de verdad. Outlook de escritorio usa el motor de Word
-              e ignora ARIA: por eso el texto visible tiene que bastarse
-              solo, y por eso dice "Ábrelo aquí para escucharlo" en vez
-              de un "clic aquí" que allí no comunicaría nada.
+              Que el destinatario no vea nada de esto no lo hace inútil: el
+              correo también lo revisan colegas y evaluadores que sí ven, y la
+              marca tiene que sostenerse ante ellos.
 
-              No se pone "Enlace" en el texto: el lector de pantalla ya
-              anuncia por su cuenta que es un enlace, y repetirlo suena a
-              tartamudeo.
+              El texto visible en versalitas no afecta a la lectura en voz
+              alta, porque el aria-label reemplaza por completo el nombre
+              accesible del enlace.
             -->
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                   style="border-collapse:separate;">
               <tr>
-                <td bgcolor="#c1272d" align="center" style="background-color:#c1272d; border-radius:8px;">
+                <td bgcolor="#a81f18" align="center"
+                    style="background-color:#a81f18; border-radius:10px; padding:0;">
+
                   <a class="boton"
                      href="https://whafonsecav.github.io/Granja-Tierra-Fresca/"
                      lang="es-CO"
                      aria-label="Grabamos dos minutos pensando en ti. Ábrelo para escucharlo: es un mensaje sonoro, dura dos minutos y no hay nada que leer. Presiona Enter para abrirlo."
                      title="Ábrelo para escucharlo. Dura dos minutos."
-                     style="display:block; padding:30px 26px; font-family:Georgia,'Times New Roman',serif; font-size:23px; font-weight:normal; line-height:33px; color:#ffffff; text-decoration:none;">
-                    Grabamos dos minutos pensando en ti<br />
-                    <span style="font-family:Arial,Helvetica,sans-serif; font-size:16px; line-height:26px; color:#ffe3e3;">Ábrelo aquí para escucharlo</span>
+                     style="display:block; padding:46px 38px 42px 38px; color:#ffffff; text-decoration:none;">
+
+                    <span style="display:block; font-family:Georgia,'Times New Roman',serif; font-size:27px; line-height:38px; color:#ffffff;">
+                      Grabamos dos&nbsp;minutos<br />pensando en&nbsp;ti
+                    </span>
+
+                    <!-- Línea fina de separación. Se hace con una celda de
+                         1 píxel de alto porque los bordes CSS los ignora
+                         Outlook de escritorio, pero el bgcolor de una celda
+                         lo respeta siempre. -->
+                    <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" style="margin:26px auto 22px auto;">
+                      <tr>
+                        <td bgcolor="#d98a84" height="1" width="56" style="background-color:#d98a84; height:1px; width:56px; line-height:1px; font-size:1px;">&nbsp;</td>
+                      </tr>
+                    </table>
+
+                    <span style="display:block; font-family:Arial,Helvetica,sans-serif; font-size:13px; line-height:20px; letter-spacing:2.5px; text-transform:uppercase; color:#f3c4c0;">
+                      Ábrelo aquí para escucharlo
+                    </span>
+
                   </a>
                 </td>
               </tr>

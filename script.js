@@ -866,13 +866,39 @@
     hablar(texto);
   }
 
+  // Arranca y pausa el audio en el acto, para dejarlo desbloqueado. Solo se
+  // usa dentro del manejador del gesto del usuario.
+  function desbloquearAudio() {
+    try {
+      var p = audio.play();
+      if (p && typeof p.then === "function") {
+        p.then(function () {
+          // Si para cuando resuelve ya estamos reproduciendo de verdad, no se
+          // toca: pausar aqui cortaria la experiencia recien empezada.
+          if (estado !== "REPRODUCIENDO") {
+            audio.pause();
+            audio.currentTime = 0;
+          }
+        })["catch"](function () { /* bloqueado: se vera al reproducir */ });
+      }
+    } catch (e) { /* sin efecto */ }
+  }
+
   function comenzar() {
     if (yaArranco) { return; }
     yaArranco = true;
 
-    // Se cancela lo que haya quedado en cola. En iOS la bienvenida sigue ahi
-    // esperando, y sin esto se soltaria encima de lo que viene ahora.
-    if (TTS && algunaVozSono) { TTS.cancel(); }
+    // Se cancela SIEMPRE lo que haya quedado en cola, sin mirar si llego a
+    // sonar. Antes esto solo se hacia cuando la voz si habia sonado, y era
+    // justo al reves de lo que hacia falta: si no sono es porque el navegador
+    // la bloqueo y la dejo esperando, que es precisamente el caso en el que
+    // hay algo que cancelar. En Edge se soltaban las dos locuciones juntas,
+    // la encolada y la del toque, y el mensaje se oia repetido.
+    //
+    // Cancelar aqui no rompe el desbloqueo de iOS: lo que ese sistema exige
+    // es que speak() se llame dentro del gesto, y hablarDeInmediato lo hace
+    // un instante despues, en el mismo gesto.
+    if (TTS) { TTS.cancel(); }
 
     despertarSalida();
     mantenerPantallaEncendida();
@@ -880,18 +906,23 @@
     arranque.setAttribute("aria-label", "Reproduciendo.");
     arranque.blur();
 
-    // En iOS y Android ninguna pagina puede hablar antes del primer toque: la
-    // instruccion de arranque solo la oye quien tenga lector de pantalla. Este
-    // es el primer instante en que la voz puede sonar, asi que se le dice aqui
-    // lo que no se le pudo decir antes. En computador ya lo escucho y seria
-    // repetirselo, asi que alli se entra directo.
-    // Si el mensaje de bienvenida nunca llego a sonar, es que la plataforma
-    // lo bloqueo: iOS Safari, tipicamente. Este es el primer instante en que
-    // se puede hablar, asi que se dice aqui, por la via sincrona, que es la
-    // unica que iOS acepta. Ver hablarDeInmediato.
+    // Si el mensaje de bienvenida nunca llego a sonar, es que el navegador lo
+    // bloqueo: iOS Safari siempre, Edge a menudo. Este es el primer instante
+    // en que se puede hablar, asi que se dice aqui, por la via sincrona, que
+    // es la unica que iOS acepta. Ver hablarDeInmediato.
     //
-    // Si si sono, no se repite nada: se entra directo a la experiencia.
+    // Si si sono, no se repite: se entra directo a la experiencia.
     if (!algunaVozSono) {
+      // El permiso que da un toque dura poco. Como aqui primero se habla y
+      // solo despues se reproduce, para cuando llega el turno del audio ese
+      // permiso ya expiro y el navegador rechaza play(): por eso en Edge
+      // hacia falta tocar la pantalla una segunda vez.
+      //
+      // Se resuelve arrancando y pausando el audio ahora mismo, todavia
+      // dentro del gesto. El elemento queda desbloqueado y el play() de
+      // despues ya no se rechaza.
+      desbloquearAudio();
+
       hablarDeInmediato("Tenemos un mensaje especial para ti. " +
                         AVISO_PREGUNTAS + " Aquí va.", reproducir);
       return;
