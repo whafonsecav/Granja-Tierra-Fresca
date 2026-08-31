@@ -250,6 +250,13 @@
     return p;
   }
 
+  // Cierto solo si el navegador ya termino de enumerar sus voces.
+  function hayVocesEnumeradas() {
+    if (!TTS || typeof TTS.getVoices !== "function") { return true; }
+    var v = TTS.getVoices();
+    return !!(v && v.length);
+  }
+
   function vozEspanol() {
     if (!TTS) { return null; }
     var voces = TTS.getVoices() || [];
@@ -284,7 +291,10 @@
     if (typeof TTS.addEventListener === "function") {
       TTS.addEventListener("voiceschanged", resolver);
     }
-    window.setTimeout(resolver, 1500);
+    // Edge tarda bastante mas que Chrome en enumerar sus voces, sobre todo
+    // las que se sintetizan en servidor. Con 1500 ms se le agotaba el tiempo
+    // y la pagina se quedaba muda.
+    window.setTimeout(resolver, 2800);
   }
 
   // Estimacion de cuanto tarda en leerse un texto en voz alta. Se usa cuando
@@ -386,7 +396,9 @@
   function nuevaFrase(texto, voz) {
     var f = new window.SpeechSynthesisUtterance(texto);
     f.lang = "es-CO";
-    f.voice = voz;
+    // Sin voz explicita, el motor elige por su cuenta segun el idioma. Es lo
+    // que pasa en Edge, que a veces no ha terminado de enumerar las voces.
+    if (voz) { f.voice = voz; }
     // 0.95 y 1.02: apenas por debajo de la velocidad nominal y apenas por
     // encima del tono neutro. Es lo que menos suena a maquina leyendo.
     f.rate = VELOCIDAD_VOZ;
@@ -416,8 +428,20 @@
     TTS.cancel();
 
     conVozLista(function (voz) {
-      if (!voz) {
-        // Sin voz espanola no se sintetiza. Ver regla 4 del encabezado.
+      // Hay que distinguir dos situaciones que parecen la misma y no lo son:
+      //
+      //   a) El navegador ya enumero sus voces y ninguna habla espanol. Ahi
+      //      no se sintetiza: una voz inglesa leyendo espanol se entiende
+      //      peor que el silencio, y el lector de pantalla del usuario ya
+      //      recibio el texto por aria-live.
+      //
+      //   b) El navegador todavia no ha enumerado nada y devuelve una lista
+      //      vacia. Eso no significa que no tenga voces: Edge tarda mucho mas
+      //      que Chrome, sobre todo con las voces de servidor. Aqui SI se
+      //      habla, sin voz explicita, y el motor escoge segun lang. Tratar
+      //      este caso como el anterior es lo que dejaba muda la pagina en
+      //      Edge mientras en Chrome funcionaba.
+      if (!voz && hayVocesEnumeradas()) {
         window.setTimeout(seguir, SILENCIO_INICIAL_MS + tiempoDeLectura(texto));
         return;
       }
@@ -479,9 +503,10 @@
     frase.lang = "es-CO";
     frase.rate = VELOCIDAD_VOZ;
     frase.pitch = 1.02;
-    // Si la lista de voces todavia no ha cargado no se espera: con lang en
-    // es-CO el motor escoge una voz espanola por su cuenta. Aqui vale mas
-    // hablar de inmediato que hablar con la voz perfecta.
+    // No se espera a que carguen las voces: con lang en es-CO el motor
+    // escoge por su cuenta. Aqui vale mas hablar de inmediato que hablar con
+    // la voz perfecta, porque esta es la locucion que iOS solo acepta si sale
+    // dentro del gesto.
     var voz = vozEspanol();
     if (voz) { frase.voice = voz; }
 

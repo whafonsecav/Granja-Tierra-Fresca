@@ -39,36 +39,47 @@ CUERPO_MAXIMO = 12.0
 
 # --- El copy. Un solo parrafo, en primera persona, escrito para ser OIDO ----
 #
-# Cada afirmacion sale de los archivos de la campana:
-#   Producto  -> firmeza, jugo, olor al destapar, tamano uniforme, empaque
-#                facil de abrir sin ayuda
-#   Precio    -> no es el mas barato, es la certeza de no llevarse sorpresas
-#   Plaza     -> el correo como supermercado propio, sin depender de nadie
-#   Promocion -> textura, aroma y sonido; calor de hogar; trato de igual a
-#                igual, sin lastima y sin condescendencia
+# Es la version resumida del audio, y sigue sus mismos hitos en el mismo
+# orden. Quien habla es Natalia, que NO trabaja en la granja: es una clienta
+# ciega de nacimiento, igual que el destinatario, contando su experiencia.
 #
-# Que lo firme una persona con nombre no es un adorno de redaccion. El estudio
-# dice que el destinatario confia a ciegas en que quien empaca su pedido sera
-# sus ojos: por eso esa persona existe, se llama Natalia y responde por lo que
-# manda.
+# Ese detalle lo cambia todo y conviene no perderlo de vista al editar. La
+# pieza no funciona porque una marca describa su producto, sino porque alguien
+# que vive exactamente la misma situacion cuenta que le funciono. El estudio
+# de las 4 P pide "lenguaje natural y cercano, que no lo trate de forma
+# diferente ni con pesar por su condicion": el testimonio de un par es la
+# unica forma de conseguir eso sin caer en la condescendencia.
+#
+# Hitos del audio que este parrafo conserva:
+#   1. Natalia es ciega de nacimiento, como el destinatario.
+#   2. La angustia de pedir a domicilio sin saber que le empacan a uno.
+#   3. Abrio un correo de una granja inclusiva y respondio.
+#   4. Le llego una docena de muestra, gratis.
+#   5. Al tocarlos: firmes, redonditos, del mismo tamano -> porciones a la fija.
+#   6. Una marca que confia en su independencia.
+#   7. Al cocinarlos, el olor la llevo a los domingos donde su abuela.
+#   8. El detalle que la convencio: recetario en braille impreso, y el mismo
+#      recetario en audiolibro por correo. Respeto, no publicidad.
+#   9. La granja se llama Tierra Fresca y quiere mandarle una muestra gratis.
+#  10. Si le gusta, pueden volverse sus proveedores oficiales.
 COPY = (
-    "Hola, soy Natalia, y soy la que escoge los tomates que te van a llegar. "
-    "Los recojo a mano, uno por uno, y el que no pasa mi prueba no lo empaco: "
-    "si cede al apretarlo, se queda. Los que sí van todos del mismo tamaño, "
-    "para que calcular tus porciones te sea apenas cuestión de contarlos. La "
-    "caja se abre de un solo movimiento, sin tijeras y sin pedirle ayuda a "
-    "nadie, y lo primero que vas a sentir al destaparla es el olor: verde, "
-    "dulce, recién cortado. Lo demás lo vas a reconocer solo, porque tú ya "
-    "sabes cómo suena un tomate bueno: la cáscara que rechina limpia bajo el "
-    "agua, el cuchillo que entra sin resistencia y suelta el jugo de una, los "
-    "cubos cayendo al aceite con ese chasquido espeso que no se puede fingir. "
-    "Esa es mi garantía, y es la única prueba que te pido que evalúes. No te "
-    "estoy ofreciendo el tomate más barato; te estoy ofreciendo la certeza de "
-    "que no vas a encontrarte nunca uno machucado, blando ni pasado en tu "
-    "propia cocina, y de que quien lo escogió tiene nombre y responde por él. "
-    "Tú pides desde tu correo, en el hueco que te quede entre clase y clase, "
-    "y yo te lo llevo hasta la puerta: tu mercado, tu decisión, tu guiso, tu "
-    "casa oliendo a comida hecha en familia."
+    "Hola, Carlos. Soy Natalia y, como tú, soy ciega de nacimiento, así que "
+    "no tengo que explicarte lo que se siente pedir algo a domicilio y "
+    "quedarse esperando a ver qué le empacaron a uno. Yo abrí un correo "
+    "parecido a este, de una granja inclusiva, y me animé a responder. Me "
+    "llegó a la casa una docena de tomates de guiso de muestra, gratis. Los "
+    "toqué uno por uno y sentí un alivio buenísimo: todos firmes, redonditos "
+    "y exactamente del mismo tamaño, que es lo que le permite a uno calcular "
+    "las porciones a la fija, sin enredarse. Se siente bonito cuando una "
+    "marca entiende nuestra condición y confía en que uno puede hacer las "
+    "cosas por su cuenta. Al cocinarlos soltaron un olor que me llevó de una "
+    "a los domingos donde mi abuela. Pero lo que de verdad me hizo confiar "
+    "fue un detallazo: junto con los tomates me mandaron un recetario impreso "
+    "en braille, y al correo el mismo recetario en audiolibro. Eso no es "
+    "publicidad, es respeto. Se llaman Tierra Fresca, y a ti también quieren "
+    "mandarte una muestra gratis para que la pruebes con tus propias manos. "
+    "Si te gusta, y yo sé que sí, pueden volverse tus proveedores oficiales "
+    "de tomate de guiso."
 )
 
 
@@ -121,9 +132,9 @@ def main():
     c = pdfcanvas.Canvas(salida, pagesize=A4)
     # Metadatos: no se imprimen en la hoja, pero el lector de pantalla los
     # anuncia al abrir el documento. No violan la regla de "cero títulos".
-    c.setTitle("Un mensaje de Natalia - Granja Tierra Fresca")
-    c.setAuthor("Natalia, Granja Tierra Fresca")
-    c.setSubject("Propuesta de venta de tomate de guiso")
+    c.setTitle("Lo que me paso con Tierra Fresca - Natalia")
+    c.setAuthor("Natalia")
+    c.setSubject("Testimonio sobre el tomate de guiso de Tierra Fresca")
     c._doc.Catalog.Lang = PDFString("es-CO")   # idioma del documento, para TTS
 
     alto = parrafo.height
