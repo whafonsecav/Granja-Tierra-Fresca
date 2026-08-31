@@ -46,8 +46,8 @@ window.TIERRA_FRESCA_IDIOMAS = {
     saludo: "Hola.",
     conectores: ["Bien.", "Listo.", "Ahora.", "A ver."],
 
-    gestoMovil: "Toca la pantalla",
-    gestoEscritorio: "Oprime cualquier tecla",
+    gestoMovil: "toca la pantalla",
+    gestoEscritorio: "oprime cualquier tecla",
     aviso: "Al final te haré unas preguntas muy breves que podrás responder " +
            "con tu micrófono. Cuando el navegador te pida permiso, actívalo.",
 
@@ -55,7 +55,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
     bienvenida: "Tenemos un mensaje especial para ti. {aviso} Por favor, {gesto} para escuchar este mensaje que tenemos para ti.",
     puente: "Tenemos un mensaje especial para ti. {aviso} Aquí va.",
     arranca: "A continuación te reproduzco el mensaje que preparamos especialmente para ti.",
-    tocaOtraVez: "{gesto} otra vez, por favor.",
+    tocaOtraVez: "Por favor, {gesto} otra vez.",
 
     soloTeclado: "No puedo usar el micrófono, así que vamos por el teclado. " +
                  "Presiona la tecla ese para decir sí, y la tecla ene para " +
@@ -92,11 +92,11 @@ window.TIERRA_FRESCA_IDIOMAS = {
     preguntaPdf: "Una última cosa. ¿Quieres descargar nuestra propuesta? Es un " +
                  "solo párrafo, de diez líneas, escrito para que tu lector de " +
                  "pantalla te lo lea de corrido. Responde sí, o no.",
-    cierreNumeroYPdf: "Tu número quedó guardado: uno de nuestros aliados se comunica contigo muy pronto. Gracias por escucharnos hasta el final. Cuando termine de hablar, la propuesta se descargará sola en tu equipo. Hasta pronto.",
-    cierreNumeroSinPdf: "Tu número quedó guardado y uno de nuestros aliados se comunica contigo muy pronto. Gracias por escucharnos hasta el final. Hasta pronto.",
+    cierreNumeroYPdf: "Cuando termine de hablar, la propuesta se descargará sola en tu equipo. Gracias por escucharnos hasta el final. Hasta muy pronto.",
+    cierreNumeroSinPdf: "Sin problema, te la dejo así. Gracias por escucharnos hasta el final. Hasta muy pronto.",
     cierrePdfSinNumero: "Gracias por regalarnos tu tiempo. Cuando termine de hablar, la propuesta se descargará sola en tu equipo, para cuando quieras oírla con calma. Hasta pronto.",
     cierreSinNada: "Gracias por regalarnos tu tiempo y tu atención. Aquí quedamos, por si algún día quieres volver. Hasta pronto.",
-    numeroGuardado: "Ya lo tengo.",
+    numeroGuardado: "Tu número quedó guardado. Uno de nuestros aliados se va a comunicar contigo para coordinar tu envío.",
     cierreConPdf: "Listo, ya lo tienes en tu carpeta de descargas. Que ese guiso " +
                   "te quede como en casa. Hasta pronto.",
     cierreSinPdf: "Perfecto, te lo dejo así. Que ese guiso te quede como en casa. " +
@@ -110,8 +110,8 @@ window.TIERRA_FRESCA_IDIOMAS = {
     saludo: "Hello.",
     conectores: ["Alright.", "Okay.", "Now.", "So."],
 
-    gestoMovil: "Tap the screen",
-    gestoEscritorio: "Press any key",
+    gestoMovil: "tap the screen",
+    gestoEscritorio: "press any key",
     aviso: "At the end I'll ask you a couple of very short questions that you " +
            "can answer with your microphone. When the browser asks for " +
            "permission, allow it.",
@@ -120,7 +120,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
     bienvenida: "We have a special message for you. {aviso} Please, {gesto} to hear this message we have for you.",
     puente: "We have a special message for you. {aviso} Here it goes.",
     arranca: "Here comes the message we prepared especially for you.",
-    tocaOtraVez: "{gesto} again, please.",
+    tocaOtraVez: "Please, {gesto} again.",
 
     soloTeclado: "I can't use the microphone, so let's go with the keyboard. " +
                  "Press the S key for yes, and the N key for no. When I ask " +
@@ -155,11 +155,11 @@ window.TIERRA_FRESCA_IDIOMAS = {
     preguntaPdf: "One last thing. Would you like to download our proposal? " +
                  "It's a single paragraph, ten lines, written so your screen " +
                  "reader can read it straight through. Answer yes, or no.",
-    cierreNumeroYPdf: "Your number is saved: one of our partners will be in touch very soon. Thank you for listening all the way through. When I finish speaking, the proposal will download on its own. See you soon.",
-    cierreNumeroSinPdf: "Your number is saved and one of our partners will be in touch very soon. Thank you for listening all the way through. See you soon.",
+    cierreNumeroYPdf: "When I finish speaking, the proposal will download on its own. Thank you for listening all the way through. See you very soon.",
+    cierreNumeroSinPdf: "No problem, I will leave it. Thank you for listening all the way through. See you very soon.",
     cierrePdfSinNumero: "Thank you for giving us your time. When I finish speaking, the proposal will download on its own, for whenever you want to hear it calmly. See you soon.",
     cierreSinNada: "Thank you for giving us your time and your attention. We are here, in case you ever want to come back. See you soon.",
-    numeroGuardado: "Got it.",
+    numeroGuardado: "Your number is saved. One of our partners will get in touch with you to arrange your delivery.",
     cierreConPdf: "Done, it's in your downloads folder. May that stew taste " +
                   "like home. See you soon.",
     cierreSinPdf: "Perfect, I'll leave it. May that stew taste like home. " +
@@ -172,8 +172,8 @@ window.TIERRA_FRESCA_IDIOMAS = {
     saludo: "Olá.",
     conectores: ["Bom.", "Pronto.", "Agora.", "Então."],
 
-    gestoMovil: "Toque na tela",
-    gestoEscritorio: "Aperte qualquer tecla",
+    gestoMovil: "toque na tela",
+    gestoEscritorio: "aperte qualquer tecla",
     aviso: "No final vou te fazer umas perguntas bem curtas que você pode " +
            "responder com o seu microfone. Quando o navegador pedir permissão, " +
            "autorize.",
@@ -182,7 +182,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
     bienvenida: "Temos uma mensagem especial para você. {aviso} Por favor, {gesto} para ouvir esta mensagem que temos para você.",
     puente: "Temos uma mensagem especial para você. {aviso} Lá vai.",
     arranca: "A seguir vou reproduzir a mensagem que preparamos especialmente para você.",
-    tocaOtraVez: "{gesto} de novo, por favor.",
+    tocaOtraVez: "Por favor, {gesto} de novo.",
 
     soloTeclado: "Não consigo usar o microfone, então vamos pelo teclado. " +
                  "Aperte a tecla S para sim, e a tecla N para não. Quando eu " +
@@ -219,11 +219,11 @@ window.TIERRA_FRESCA_IDIOMAS = {
     preguntaPdf: "Uma última coisa. Quer baixar a nossa proposta? É um parágrafo " +
                  "só, de dez linhas, escrito para o seu leitor de tela ler de " +
                  "uma vez. Responda sim, ou não.",
-    cierreNumeroYPdf: "O seu número ficou guardado: um dos nossos parceiros entra em contato muito em breve. Obrigado por ouvir até o final. Quando eu terminar de falar, a proposta será baixada sozinha. Até logo.",
-    cierreNumeroSinPdf: "O seu número ficou guardado e um dos nossos parceiros entra em contato muito em breve. Obrigado por ouvir até o final. Até logo.",
+    cierreNumeroYPdf: "Quando eu terminar de falar, a proposta será baixada sozinha. Obrigado por ouvir até o final. Até muito breve.",
+    cierreNumeroSinPdf: "Sem problema, deixo assim. Obrigado por ouvir até o final. Até muito breve.",
     cierrePdfSinNumero: "Obrigado por nos dar o seu tempo. Quando eu terminar de falar, a proposta será baixada sozinha, para quando quiser ouvir com calma. Até logo.",
     cierreSinNada: "Obrigado por nos dar o seu tempo e a sua atenção. Ficamos por aqui, caso um dia queira voltar. Até logo.",
-    numeroGuardado: "Já anotei.",
+    numeroGuardado: "O seu número ficou guardado. Um dos nossos parceiros vai entrar em contato para combinar o envio.",
     cierreConPdf: "Pronto, já está na sua pasta de downloads. Que esse refogado " +
                   "fique com gosto de casa. Até logo.",
     cierreSinPdf: "Perfeito, deixo assim. Que esse refogado fique com gosto de " +
@@ -236,8 +236,8 @@ window.TIERRA_FRESCA_IDIOMAS = {
     saludo: "Ciao.",
     conectores: ["Bene.", "Allora.", "Ecco.", "Adesso."],
 
-    gestoMovil: "Tocca lo schermo",
-    gestoEscritorio: "Premi un tasto qualsiasi",
+    gestoMovil: "tocca lo schermo",
+    gestoEscritorio: "premi un tasto qualsiasi",
     aviso: "Alla fine ti farò qualche domanda molto breve a cui potrai " +
            "rispondere con il microfono. Quando il browser ti chiede il " +
            "permesso, autorizzalo.",
@@ -246,7 +246,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
     bienvenida: "Abbiamo un messaggio speciale per te. {aviso} Per favore, {gesto} per ascoltare questo messaggio che abbiamo per te.",
     puente: "Abbiamo un messaggio speciale per te. {aviso} Eccolo.",
     arranca: "Adesso ti riproduco il messaggio che abbiamo preparato apposta per te.",
-    tocaOtraVez: "{gesto} di nuovo, per favore.",
+    tocaOtraVez: "Per favore, {gesto} di nuovo.",
 
     soloTeclado: "Non riesco a usare il microfono, quindi andiamo con la " +
                  "tastiera. Premi il tasto S per sì, e il tasto N per no. " +
@@ -282,11 +282,11 @@ window.TIERRA_FRESCA_IDIOMAS = {
     preguntaPdf: "Un'ultima cosa. Vuoi scaricare la nostra proposta? È un solo " +
                  "paragrafo, di dieci righe, scritto perché il tuo lettore di " +
                  "schermo lo legga tutto di seguito. Rispondi sì, o no.",
-    cierreNumeroYPdf: "Il tuo numero è salvato: uno dei nostri partner ti contatta prestissimo. Grazie per averci ascoltato fino in fondo. Quando finisco di parlare, la proposta si scaricherà da sola. A presto.",
-    cierreNumeroSinPdf: "Il tuo numero è salvato e uno dei nostri partner ti contatta prestissimo. Grazie per averci ascoltato fino in fondo. A presto.",
+    cierreNumeroYPdf: "Quando finisco di parlare, la proposta si scaricherà da sola. Grazie per averci ascoltato fino in fondo. A prestissimo.",
+    cierreNumeroSinPdf: "Nessun problema, la lascio così. Grazie per averci ascoltato fino in fondo. A prestissimo.",
     cierrePdfSinNumero: "Grazie per averci dato il tuo tempo. Quando finisco di parlare, la proposta si scaricherà da sola, per quando vorrai ascoltarla con calma. A presto.",
     cierreSinNada: "Grazie per averci dato il tuo tempo e la tua attenzione. Restiamo qui, se un giorno vorrai tornare. A presto.",
-    numeroGuardado: "Ce l'ho.",
+    numeroGuardado: "Il tuo numero è salvato. Uno dei nostri partner ti contatterà per organizzare la consegna.",
     cierreConPdf: "Fatto, ce l'hai nella cartella dei download. Che quel sugo " +
                   "sappia di casa. A presto.",
     cierreSinPdf: "Perfetto, lo lascio così. Che quel sugo sappia di casa. A presto."
@@ -298,8 +298,8 @@ window.TIERRA_FRESCA_IDIOMAS = {
     saludo: "Bonjour.",
     conectores: ["Bien.", "Voilà.", "Alors.", "Bon."],
 
-    gestoMovil: "Touche l'écran",
-    gestoEscritorio: "Appuie sur n'importe quelle touche",
+    gestoMovil: "touche l'écran",
+    gestoEscritorio: "appuie sur n'importe quelle touche",
     aviso: "À la fin je te poserai quelques questions très courtes auxquelles " +
            "tu pourras répondre avec ton micro. Quand le navigateur demandera " +
            "l'autorisation, accepte-la.",
@@ -308,7 +308,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
     bienvenida: "Nous avons un message spécial pour toi. {aviso} S'il te plaît, {gesto} pour écouter ce message que nous avons pour toi.",
     puente: "Nous avons un message spécial pour toi. {aviso} Le voici.",
     arranca: "Je te passe maintenant le message que nous avons préparé spécialement pour toi.",
-    tocaOtraVez: "{gesto} encore une fois, s'il te plaît.",
+    tocaOtraVez: "S'il te plaît, {gesto} encore une fois.",
 
     soloTeclado: "Je ne peux pas utiliser le micro, alors passons au clavier. " +
                  "Appuie sur la touche S pour oui, et sur la touche N pour non. " +
@@ -346,11 +346,11 @@ window.TIERRA_FRESCA_IDIOMAS = {
     preguntaPdf: "Une dernière chose. Veux-tu télécharger notre proposition ? " +
                  "C'est un seul paragraphe, de dix lignes, écrit pour que ton " +
                  "lecteur d'écran le lise d'un trait. Réponds oui, ou non.",
-    cierreNumeroYPdf: "Ton numéro est enregistré : un de nos partenaires te contacte très bientôt. Merci de nous avoir écoutés jusqu'au bout. Quand j'aurai fini de parler, la proposition se téléchargera toute seule. À bientôt.",
-    cierreNumeroSinPdf: "Voilà. Ton numéro est enregistré et un de nos partenaires te contacte très bientôt. Merci de nous avoir écoutés jusqu'au bout. À bientôt.",
+    cierreNumeroYPdf: "Quand j'aurai fini de parler, la proposition se téléchargera toute seule. Merci de nous avoir écoutés jusqu'au bout. À très bientôt.",
+    cierreNumeroSinPdf: "Pas de souci, je te la laisse. Merci de nous avoir écoutés jusqu'au bout. À très bientôt.",
     cierrePdfSinNumero: "Merci de nous avoir donné ton temps. Quand j'aurai fini de parler, la proposition se téléchargera toute seule, pour quand tu voudras l'écouter tranquillement. À bientôt.",
     cierreSinNada: "Merci de nous avoir donné ton temps et ton attention. Nous restons là, si un jour tu veux revenir. À bientôt.",
-    numeroGuardado: "Je l'ai.",
+    numeroGuardado: "Ton numéro est enregistré. Un de nos partenaires te contactera pour organiser ta livraison.",
     cierreConPdf: "Voilà, tu l'as dans ton dossier de téléchargements. Que ce " +
                   "plat ait le goût de la maison. À bientôt.",
     cierreSinPdf: "Parfait, je te le laisse comme ça. Que ce plat ait le goût " +
