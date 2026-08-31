@@ -1,243 +1,116 @@
 /* =========================================================================
-   Granja Tierra Fresca — experiencia sensorial del tomate de guiso
+   Granja Tierra Fresca — hoja de estilos de una pantalla vacia
 
-   Dos criterios mandan sobre cualquier decision estetica:
+   Aqui no hay tipografia, ni botones, ni tarjetas, porque en pantalla no
+   hay nada que mostrar. Este archivo hace exactamente tres cosas:
 
-   1. El fondo se desenfoca hasta volverse ilegible. Quien ve la pagina no
-      obtiene ni un dato mas que quien la escucha. Es una decision de campana,
-      no un efecto decorativo.
-   2. Todo lo que SI comunica (texto y botones) va al maximo contraste y a
-      tamanos grandes: el destinatario es ciego, pero la pieza tambien la
-      revisan personas con baja vision.
+     1. pinta el fondo de la granja y lo desenfoca hasta volverlo manchas;
+     2. deja la superficie de arranque invisible pero capturando el gesto
+        en toda la pantalla;
+     3. esconde de la vista el texto que existe solo para el lector de
+        pantalla, sin esconderlo de las tecnologias de asistencia.
    ========================================================================= */
-
-:root {
-  --tinta:        #100a05;
-  --papel:        #fdf6ec;
-  --tomate:       #c0261c;
-  --tomate-vivo:  #ff5a3c;
-  --hoja:         #2f5d2a;
-  --foco:         #ffd24a;
-  --radio:        18px;
-}
 
 * { box-sizing: border-box; }
 
-html { -webkit-text-size-adjust: 100%; }
-
-body {
+html, body {
   margin: 0;
-  min-height: 100dvh;
-  background: var(--tinta);
-  color: var(--papel);
-  font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
-  font-size: clamp(1.05rem, 1.6vw, 1.25rem);
-  line-height: 1.65;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;          /* no hay contenido: no debe haber scroll */
+  background: #100a05;
+  /* Se declara aunque casi no se use: si alguna vez se muestra texto de
+     error del navegador, que salga con una familia legible. */
+  font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
 }
 
-/* --- Fondo desenfocado -------------------------------------------------- */
-/* El inset negativo es obligatorio: sin el, el blur difumina tambien los
-   bordes de la imagen y aparece un halo transparente en los cuatro costados.
-   translateZ(0) promueve la capa al compositor; sin eso, Chrome deja zonas
-   sin repintar al hacer scroll sobre un elemento fijo y desenfocado.          */
+/* --- Fondo de la granja --------------------------------------------------
+   blur(70px) es el argumento de la campana convertido en CSS: quien ve la
+   pagina no obtiene ni un dato mas que quien la escucha. Solo manchas
+   verdes y rojas.
+
+   El inset negativo es obligatorio: sin el, el desenfoque difumina tambien
+   los bordes de la imagen y aparece un halo transparente en los costados.
+   translateZ(0) promueve la capa al compositor; sin eso Chrome deja zonas
+   sin repintar en pantallas que cambian de tamano.
+
+   Para cambiarlo por una foto real, sobrescriba assets/granja-tomates.jpg
+   conservando el nombre. Este archivo no hay que tocarlo.               */
 #fondo {
   position: fixed;
   inset: -14vmax;
-  background: url("assets/granja-tomates.jpg") center / cover no-repeat;
+  /* Encuadre bajo: deja el cielo fuera y llena la pantalla de cultivo,
+     que es donde estan las manchas verdes y rojas. */
+  background: url("assets/granja-tomates.jpg") center 72% / cover no-repeat;
   filter: blur(70px) saturate(1.7) brightness(1.45);
   transform: translateZ(0);
   will-change: filter;
-  z-index: -2;
+  z-index: 0;
 }
 
-/* Velo oscuro: es lo que hace que el texto blanco pase AAA sobre las manchas
-   verdes y rojas del fondo. Sin el, el contraste se cae en las zonas claras. */
+/* Velo: baja la intensidad del fondo para que no canse la vista de quien
+   tenga la pagina abierta durante el minuto de audio. */
 #velo {
   position: fixed;
   inset: 0;
   transform: translateZ(0);
-  background:
-    radial-gradient(130% 100% at 50% 28%, rgba(12, 8, 4, 0.42), rgba(12, 8, 4, 0.74));
-  z-index: -1;
+  background: radial-gradient(130% 100% at 50% 35%,
+                              rgba(12, 8, 4, 0.30),
+                              rgba(12, 8, 4, 0.62));
+  z-index: 1;
 }
 
-/* --- Texto reservado a lectores de pantalla ----------------------------- */
+/* --- Superficie de arranque ----------------------------------------------
+   Ocupa la pantalla completa y es transparente. No dibuja nada: su unico
+   contenido es el aria-label que escribe script.js, y su unico trabajo es
+   recibir el foco al cargar (para que el lector de pantalla lea la
+   instruccion) y capturar el primer toque.                              */
+#arranque {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;   /* sin destello azul en moviles */
+  touch-action: manipulation;
+}
+
+/* Normalmente quitar el indicador de foco es un error grave de accesibilidad.
+   Aqui no lo es: el elemento enfocado ocupa la pantalla entera, asi que un
+   anillo de foco seria un marco alrededor de todo el navegador, no una pista
+   util. Y el requisito de la pieza es que en pantalla no aparezca nada.
+   La instruccion no se pierde: se anuncia por voz y por lector de pantalla. */
+#arranque:focus,
+#arranque:focus-visible {
+  outline: none;
+}
+
+/* --- Texto solo para lectores de pantalla --------------------------------
+   Invisible a la vista, pero presente en el arbol de accesibilidad. No se
+   usa display:none ni visibility:hidden, porque cualquiera de los dos lo
+   sacaria tambien del alcance del lector de pantalla, que es justo lo que
+   se necesita conservar.                                                  */
 .solo-lectores {
   position: absolute;
-  width: 1px; height: 1px;
-  margin: -1px; padding: 0; border: 0;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
   overflow: hidden;
   clip: rect(0 0 0 0);
   clip-path: inset(50%);
   white-space: nowrap;
 }
 
-/* --- Compuerta de inicio: la pantalla entera es el boton ---------------- */
-#compuerta {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  width: 100%;
-  border: 0;
-  padding: 6vw;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1.1rem;
-  text-align: center;
-  cursor: pointer;
-  color: var(--papel);
-  background: rgba(16, 10, 5, 0.94);
-  font: inherit;
-}
-#compuerta[hidden] { display: none; }
-
-.compuerta-titulo {
-  font-size: clamp(1.9rem, 6vw, 3.4rem);
-  font-weight: 800;
-  line-height: 1.15;
-  max-width: 18ch;
-  text-wrap: balance;
-}
-.compuerta-sub {
-  font-size: clamp(1rem, 2.2vw, 1.3rem);
-  max-width: 46ch;
-  color: #e6d9c6;
-}
-
-/* --- Contenido ---------------------------------------------------------- */
-#contenido {
-  max-width: 46rem;
-  margin: 0 auto;
-  padding: clamp(1.5rem, 5vw, 4rem) clamp(1.1rem, 5vw, 2rem) 4rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.6rem;
-}
-
-.marca {
-  margin: 0 0 0.4rem;
-  font-size: 0.95rem;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  /* Amarillo y no rojo: el fondo desenfocado tiene manchas rojas grandes y el
-     rojo sobre rojo se pierde. El amarillo contrasta contra verde y contra rojo. */
-  color: var(--foco);
-}
-
-h1 {
-  margin: 0 0 1rem;
-  font-size: clamp(1.9rem, 5.2vw, 3.1rem);
-  line-height: 1.14;
-  font-weight: 800;
-  text-wrap: balance;
-}
-
-.entrada { margin: 0; max-width: 40ch; }
-
-.estado {
-  margin: 0;
-  padding: 0.9rem 1.15rem;
-  border-left: 6px solid var(--tomate-vivo);
-  background: rgba(0, 0, 0, 0.45);
-  border-radius: 0 var(--radio) var(--radio) 0;
-  font-weight: 600;
-}
-
-audio {
-  width: 100%;
-  min-height: 54px;
-  border-radius: var(--radio);
-}
-
-/* --- Botones gigantes de contingencia ----------------------------------- */
-#acciones {
-  display: flex;
-  flex-direction: column;
-  gap: 1.1rem;
-}
-
-.boton-grande {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  width: 100%;
-  min-height: 108px;
-  padding: 1.35rem 1.5rem;
-  text-align: left;
-  cursor: pointer;
-  font: inherit;
-  color: var(--papel);
-  background: #1c120a;
-  border: 3px solid var(--papel);
-  border-radius: var(--radio);
-  transition: transform 0.12s ease, background-color 0.12s ease;
-}
-
-.boton-titulo { font-size: clamp(1.35rem, 3.4vw, 1.8rem); font-weight: 800; line-height: 1.2; }
-.boton-sub    { font-size: clamp(0.95rem, 2vw, 1.05rem); color: #e6d9c6; }
-
-.boton-primario {
-  background: var(--tomate);
-  border-color: var(--tomate-vivo);
-}
-.boton-primario .boton-sub { color: #ffffff; }
-
-.boton-grande:hover  { transform: translateY(-2px); background: #2a1a0f; }
-.boton-primario:hover { background: #9e1e15; }
-
-/* Anillo de foco desmesurado a proposito: es la unica pista visual para quien
-   navega con teclado y baja vision.                                          */
-:focus-visible {
-  outline: 5px solid var(--foco);
-  outline-offset: 4px;
-  border-radius: var(--radio);
-}
-
-.microfono {
-  margin: 0;
-  padding: 0.9rem 1.15rem;
-  border-radius: var(--radio);
-  background: rgba(0, 0, 0, 0.5);
-  border: 2px dashed rgba(253, 246, 236, 0.45);
-  font-size: 1rem;
-}
-.microfono[hidden] { display: none; }
-.microfono.escuchando {
-  border-style: solid;
-  border-color: var(--foco);
-  color: var(--foco);
-  font-weight: 700;
-}
-
-footer {
-  margin-top: 1rem;
-  padding-top: 1.6rem;
-  border-top: 2px solid rgba(253, 246, 236, 0.25);
-  font-size: 0.98rem;
-}
-footer p { margin: 0 0 0.9rem; }
-
-a {
-  color: var(--foco);
-  text-underline-offset: 4px;
-  text-decoration-thickness: 2px;
-}
-a:hover { color: #fff; }
-
-.creditos { color: #cbbba6; font-size: 0.9rem; line-height: 1.55; }
-
 /* --- Preferencias del sistema ------------------------------------------- */
+
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
-  .boton-grande:hover { transform: none; }
 }
 
-/* Modo de alto contraste de Windows: se descartan los fondos decorativos y se
-   deja que el sistema pinte con su propia paleta.                            */
+/* Modo de alto contraste de Windows: el fondo decorativo estorba y el
+   sistema prefiere pintar con su propia paleta. */
 @media (forced-colors: active) {
   #fondo, #velo { display: none; }
-  .boton-grande { border: 3px solid ButtonText; }
 }

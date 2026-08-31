@@ -3,90 +3,56 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Granja Tierra Fresca — La experiencia del tomate de guiso</title>
-<meta name="description" content="Una experiencia sonora de un minuto: el tomate de guiso de la Granja Tierra Fresca, contado por quien lo cocina.">
+<title>Granja Tierra Fresca</title>
+<meta name="description" content="Una experiencia sonora de un minuto: el tomate de guiso de la Granja Tierra Fresca.">
 <meta name="theme-color" content="#1b1006">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- Fondo: granja de tomates con desenfoque extremo. Es decorativo y se oculta
-     por completo a las tecnologias de asistencia. Quien ve, ve manchas de color;
-     quien escucha, no pierde absolutamente nada. Ese es el punto. -->
+<!--
+  ======================================================================
+  En pantalla no hay NADA. Ni titulares, ni botones, ni reproductor.
+  Solo el fondo de la granja, desenfocado hasta volverse manchas.
+
+  Todo lo que hay en este archivo es una de estas tres cosas:
+
+    a) el fondo decorativo, marcado aria-hidden;
+    b) la superficie de arranque, transparente y del tamano de la
+       pantalla, cuyo unico contenido es su aria-label;
+    c) texto reservado a lectores de pantalla, invisible a la vista.
+
+  Sobre (c): no contradice el "en pantalla no habra nada". Es la red de
+  seguridad del usuario ciego. Si el equipo no tiene una voz espanola
+  instalada, speechSynthesis no puede hablar, y sin esta region la
+  pagina se quedaria muda y sin salida. Con ella, el lector de pantalla
+  del propio usuario narra lo mismo, en espanol y a su velocidad.
+  ======================================================================
+-->
+
 <div id="fondo" aria-hidden="true"></div>
 <div id="velo" aria-hidden="true"></div>
 
-<!-- Region de anuncios: todo cambio de estado se narra aqui para el lector de
-     pantalla, incluso cuando no hay foco sobre el elemento que cambio. -->
+<!-- Region de anuncios. Invisible. Es el canal de respaldo de la voz. -->
 <p id="anuncio" class="solo-lectores" role="status" aria-live="assertive" aria-atomic="true"></p>
 
-<!-- Compuerta de inicio. Los navegadores exigen un gesto del usuario antes de
-     reproducir audio con sonido. En vez de esconder ese gesto en un boton
-     pequeno, TODA la pantalla es el boton: cualquier toque, clic, Enter o
-     barra espaciadora arranca la experiencia. -->
-<button id="compuerta" type="button" hidden
-        aria-describedby="compuerta-ayuda">
-  <span class="compuerta-titulo">Toque en cualquier parte de la pantalla para empezar</span>
-  <span class="compuerta-sub" id="compuerta-ayuda">
-    Su navegador necesita una confirmación suya antes de reproducir sonido.
-    Toda esta pantalla es un solo botón: presione Enter o la barra espaciadora.
-  </span>
-</button>
+<!--
+  Superficie de arranque. Ocupa la pantalla completa y es transparente.
+  Recibe el foco apenas carga la pagina: eso hace que el lector de
+  pantalla lea su aria-label de inmediato, sin que el usuario tenga que
+  buscar nada. El aria-label lo escribe script.js segun el dispositivo:
+  "toque la pantalla" en celular, "oprima cualquier tecla" en computador.
+-->
+<div id="arranque" role="button" tabindex="0" aria-label="Cargando."></div>
 
-<main id="contenido">
+<!-- Sin atributo controls: no debe aparecer reproductor en pantalla. -->
+<audio id="audio" src="audio/experiencia.mp3" preload="auto"></audio>
 
-  <header>
-    <p class="marca">Granja Tierra Fresca</p>
-    <h1>El tomate de guiso, contado como se debe: con los oídos.</h1>
-    <p class="entrada">
-      Está a punto de escuchar un minuto de cocina real. Nada de música de fondo:
-      el agua, el cuchillo, el aceite y la voz de alguien que cocina este tomate
-      todos los días. Al terminar, esta página le va a hablar y le va a explicar
-      qué puede decir en voz alta para seguir.
-    </p>
-  </header>
-
-  <p id="estado" class="estado">Preparando la experiencia…</p>
-
-  <!-- El audio es el corazon de la pagina. Lleva controles nativos a proposito:
-       son accesibles por teclado y por lector de pantalla desde el primer
-       segundo, sin depender de nuestro codigo. -->
-  <audio id="audio" src="audio/experiencia.mp3" preload="auto" controls
-         aria-label="Experiencia sonora del tomate de guiso"></audio>
-
-  <!-- Plan de contingencia: si el microfono no esta disponible o el usuario no
-       da permiso, estos dos botones hacen exactamente lo mismo que los comandos
-       de voz. Son enormes, de alto contraste y se recorren con la tecla Tab. -->
-  <nav id="acciones" aria-label="Acciones disponibles">
-    <button id="btn-repetir" type="button" class="boton-grande">
-      <span class="boton-titulo">Volver a reproducir</span>
-      <span class="boton-sub">o diga en voz alta: «quiero volver a reproducir»</span>
-    </button>
-
-    <button id="btn-contacto" type="button" class="boton-grande boton-primario">
-      <span class="boton-titulo">Quiero contactarlos</span>
-      <span class="boton-sub">o diga en voz alta: «quiero contactarlos» — abre WhatsApp</span>
-    </button>
-  </nav>
-
-  <p id="microfono" class="microfono" hidden></p>
-
-  <footer>
-    <p>
-      Ya se descargó en su equipo la propuesta completa en PDF, en un solo párrafo,
-      pensada para ser leída por su lector de pantalla.
-      <a id="descarga" href="docs/Tomate-de-Guiso-Tierra-Fresca.pdf"
-         download="Tomate-de-Guiso-Tierra-Fresca.pdf">
-        Descargar de nuevo la propuesta en PDF
-      </a>
-    </p>
-    <p class="creditos">
-      Granja Tierra Fresca · Pieza académica para la asignatura Comportamiento del
-      Consumidor · Politécnico Grancolombiano · Mariana Silva y William Fonseca.
-    </p>
-  </footer>
-
-</main>
+<!-- Enlace de descarga del PDF. Oculto: lo dispara el script, no el usuario. -->
+<a id="descarga" class="solo-lectores"
+   href="docs/Tomate-de-Guiso-Tierra-Fresca.pdf"
+   download="Tomate-de-Guiso-Tierra-Fresca.pdf"
+   tabindex="-1" aria-hidden="true">Propuesta en PDF</a>
 
 <script src="script.js"></script>
 </body>

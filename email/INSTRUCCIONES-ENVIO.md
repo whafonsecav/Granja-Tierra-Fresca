@@ -29,9 +29,13 @@ haga nada:
 2. el **asunto**,
 3. el **texto de vista previa** (preheader).
 
-Ese es el audio automático. No hay que inventar otro. Por eso toda la pieza está
-diseñada para que esos tres campos sean la primera frase del guion, y para que el
-cuerpo lo lleve al enlace en unos quince segundos de escucha.
+Ese es el audio automático, y ya está corriendo. No hay que inventar otro.
+
+Por eso el correo **es un botón y nada más**. Ni párrafos, ni logo, ni firma, ni
+pie de página. Cuando él presione la tecla `K` en NVDA (ir al siguiente enlace) o
+deslice en VoiceOver, sólo existe un destino posible: la experiencia. Todo el
+peso del mensaje lo cargan el asunto y la vista previa, que son justo los dos
+campos que el sistema le lee solo.
 
 ---
 
@@ -64,8 +68,8 @@ Tres cosas que **no** debe hacer con el asunto:
 
 Ya viene incrustado en el HTML, oculto visualmente. Es este:
 
-> Un minuto de cocina real: el agua, el cuchillo, el aceite caliente y la voz de
-> quien lo cocina. Un solo enlace en todo el correo.
+> Un minuto de cocina real: el agua sobre la cáscara, el cuchillo en la pulpa,
+> el aceite caliente. Un solo botón en todo el correo.
 
 Los caracteres `&#8203;` (espacio de ancho cero) que van después no son basura:
 si no estuvieran, Outlook rellenaría la vista previa con las primeras palabras
@@ -120,6 +124,7 @@ respeta este HTML sin problema porque no usa el motor de Word.
 - [ ] La prueba a usted mismo llegó a Recibidos
 - [ ] Probó el correo con las imágenes bloqueadas: como no hay ninguna imagen,
       se debe ver exactamente igual
+- [ ] Verificó que en todo el correo hay **un solo enlace**: el botón
 - [ ] Si puede, escuche el correo con el Narrador de Windows
       (`Ctrl + Windows + Enter`). Es la prueba que de verdad importa.
 
