@@ -13,7 +13,8 @@
      PREGUNTA_CONTACTO "Desea contactar a Tierra Fresca?"  ->  si / no
      CAPTURA_NUMERO    Dicta el celular completo, de corrido.
      CONFIRMA_NUMERO   Se le repite el numero digito por digito.  ->  si / no
-     FIN               Confirmacion de registro y despedida.
+     PREGUNTA_PDF      "Desea descargar la propuesta en PDF?"  ->  si / no
+     FIN               Despedida.
 
    CUATRO REGLAS QUE SOSTIENEN TODO EL ARCHIVO
    -------------------------------------------
@@ -80,7 +81,8 @@
   //
   // Mientras esto este vacio, el numero se guarda unicamente en el navegador
   // del usuario. No se pierde, pero tampoco le llega a la granja.
-  var ENDPOINT_REGISTRO = "";
+  var ENDPOINT_REGISTRO =
+    "https://script.google.com/macros/s/AKfycbxFqFEXw0ZI7rv9d-eOJbSiLWLF3ATxZbGpsCk0KiXroUSGDi3oJgH0GalBz-ZLt9fn/exec";
 
   var DIGITOS_CELULAR = 10;   // Colombia: 10 digitos
   var MINIMO_DIGITOS  = 7;
@@ -234,10 +236,64 @@
     return Math.min(20000, 1400 + texto.length * 58);
   }
 
-  // hablar(texto, despues): apaga el microfono, deja pasar el segundo en
-  // blanco, dice el texto en espanol y solo entonces ejecuta "despues". Es el
-  // unico punto del archivo donde se sintetiza voz, para que las reglas 1 y 2
-  // del encabezado no dependan de acordarse de aplicarlas en cada sitio.
+  // ---------------------------------------------------------------------
+  // Por que hablar() es tan enrevesado: el arranque recortado
+  // ---------------------------------------------------------------------
+  // Los motores de voz se comen el principio de la primera frase despues de
+  // un silencio. No es un solo problema, son tres a la vez, y cada uno se
+  // arregla distinto. Por eso hay tres capas:
+  //
+  //   1. El dispositivo de salida se duerme. Se despierta mandandole un
+  //      silencio real por WebAudio antes de hablar (despertarSalida).
+  //
+  //   2. El motor de voz abre su PROPIO canal de audio, distinto del de
+  //      WebAudio, y ese tambien arranca frio. Por eso se dice primero una
+  //      frase de calentamiento que solo tiene comas: abre el canal y no
+  //      pronuncia nada. El recorte se lo lleva ella.
+  //
+  //   3. Aun asi puede quedar un recorte de milisegundos. Por eso la frase
+  //      real tambien empieza con comas: si algo se pierde, se pierde una
+  //      pausa y no la primera silaba de la primera palabra.
+  //
+  // Las comas se usan a proposito en vez de puntos suspensivos: todos los
+  // motores las leen como pausa, y ninguno las pronuncia. Los puntos
+  // suspensivos algunos si los verbalizan.
+  var PAUSA_INICIAL = ", , ";
+
+  var latido = null;
+
+  // Chrome deja de hablar a los quince segundos si nadie lo empuja. Un
+  // pause/resume periodico mantiene viva la locucion sin alterarla.
+  // En movil no se aplica: alli pause() esta roto y produce cortes propios.
+  function iniciarLatido() {
+    detenerLatido();
+    if (esMovil()) { return; }
+    latido = window.setInterval(function () {
+      if (!TTS || !TTS.speaking) { detenerLatido(); return; }
+      try { TTS.pause(); TTS.resume(); } catch (e) { detenerLatido(); }
+    }, 9000);
+  }
+
+  function detenerLatido() {
+    if (latido) { window.clearInterval(latido); latido = null; }
+  }
+
+  function nuevaFrase(texto, voz) {
+    var f = new window.SpeechSynthesisUtterance(texto);
+    f.lang = "es-CO";
+    f.voice = voz;
+    // 0.95 y 1.02: apenas por debajo de la velocidad nominal y apenas por
+    // encima del tono neutro. Es lo que menos suena a maquina leyendo.
+    f.rate = 0.95;
+    f.pitch = 1.02;
+    f.volume = 1;
+    return f;
+  }
+
+  // hablar(texto, despues): apaga el microfono, deja pasar el silencio de
+  // arranque, dice el texto en espanol y solo entonces ejecuta "despues". Es
+  // el unico punto del archivo donde se sintetiza voz, para que las reglas 1
+  // y 2 del encabezado no dependan de acordarse de aplicarlas en cada sitio.
   function hablar(texto, despues) {
     detenerMicrofono();
     anunciar(texto);
@@ -251,6 +307,7 @@
       return;
     }
 
+    detenerLatido();
     TTS.cancel();
 
     conVozLista(function (voz) {
@@ -259,37 +316,56 @@
         window.setTimeout(seguir, SILENCIO_INICIAL_MS + tiempoDeLectura(texto));
         return;
       }
-
-      // El segundo en blanco corre mientras el silencio de despertarSalida()
-      // esta sonando. Cuando entra la voz, el dispositivo ya esta abierto.
-      window.setTimeout(function () {
-        var frase = new window.SpeechSynthesisUtterance(texto);
-        frase.lang = "es-CO";
-        // 0.95 y 1.02: apenas por debajo de la velocidad nominal y apenas por
-        // encima del tono neutro. Es la combinacion que menos suena a maquina
-        // leyendo y mas a alguien hablando con calma.
-        frase.rate = 0.95;
-        frase.pitch = 1.02;
-        frase.volume = 1;
-        frase.voice = voz;
-
-        var listo = false;
-        function finalizar() {
-          if (listo) { return; }
-          listo = true;
-          // Respiro corto: si el microfono abre en el mismo instante en que
-          // calla la voz, alcanza a capturar la cola de la propia frase.
-          window.setTimeout(seguir, 250);
-        }
-        frase.onend = finalizar;
-        frase.onerror = finalizar;
-        // Red de seguridad: en algunos Chrome "onend" no dispara si la pestana
-        // pierde el foco. Sin esto el flujo quedaria colgado para siempre.
-        window.setTimeout(finalizar, tiempoDeLectura(texto) + 4000);
-
-        TTS.speak(frase);
-      }, SILENCIO_INICIAL_MS);
+      // El silencio de WebAudio esta sonando durante esta espera. Cuando entra
+      // la voz, el dispositivo ya esta abierto.
+      window.setTimeout(function () { calentarYDecir(texto, voz, seguir); },
+                        SILENCIO_INICIAL_MS);
     });
+  }
+
+  // Capa 2: frase de calentamiento. Solo comas, a volumen casi nulo.
+  function calentarYDecir(texto, voz, seguir) {
+    var calienta = nuevaFrase(", , , ,", voz);
+    calienta.volume = 0.01;
+
+    var arrancado = false;
+    function decirDeVerdad() {
+      if (arrancado) { return; }
+      arrancado = true;
+      decirEnVozAlta(texto, voz, seguir);
+    }
+
+    calienta.onend = decirDeVerdad;
+    calienta.onerror = decirDeVerdad;
+    // Si el calentamiento no avisa que termino, se sigue igual: perder el
+    // respiro es molesto, quedarse mudo es fatal.
+    window.setTimeout(decirDeVerdad, 1600);
+
+    try { TTS.speak(calienta); } catch (e) { decirDeVerdad(); }
+  }
+
+  // Capa 3: la frase real, con sus propias comas por delante.
+  function decirEnVozAlta(texto, voz, seguir) {
+    var frase = nuevaFrase(PAUSA_INICIAL + texto, voz);
+
+    var listo = false;
+    function finalizar() {
+      if (listo) { return; }
+      listo = true;
+      detenerLatido();
+      // Respiro corto: si el microfono abre en el mismo instante en que calla
+      // la voz, alcanza a capturar la cola de la propia frase.
+      window.setTimeout(seguir, 250);
+    }
+
+    frase.onend = finalizar;
+    frase.onerror = finalizar;
+    // Red de seguridad: en algunos Chrome "onend" no dispara si la pestana
+    // pierde el foco. Sin esto el flujo quedaria colgado para siempre.
+    window.setTimeout(finalizar, tiempoDeLectura(texto) + 6000);
+
+    iniciarLatido();
+    try { TTS.speak(frase); } catch (e) { finalizar(); }
   }
 
   /* =====================================================================
@@ -488,7 +564,7 @@
     var k = e.key;
 
     if (estado === "PREGUNTA_REPETIR" || estado === "PREGUNTA_CONTACTO" ||
-        estado === "CONFIRMA_NUMERO") {
+        estado === "CONFIRMA_NUMERO" || estado === "PREGUNTA_PDF") {
       if (/^[sS]$/.test(k)) { e.preventDefault(); resolverSiNo("si"); }
       else if (/^[nN]$/.test(k)) { e.preventDefault(); resolverSiNo("no"); }
       // Erre de "repítalo": gemelo por teclado del comando de voz que vuelve
@@ -517,42 +593,53 @@
   //
   // Limite que no depende de nosotros: si el usuario tiene activada la opcion
   // "Preguntar donde guardar cada archivo", ninguna pagina puede saltarsela.
-  function descargarPdf() {
-    if (yaDescargado) { return; }
-    yaDescargado = true;
+  var urlPdf = null;     // el PDF ya bajado a memoria, listo para guardar
 
-    var ruta = enlacePdf.getAttribute("href");
-    var nombre = enlacePdf.getAttribute("download") || "propuesta.pdf";
-
-    function directo() {
-      try { enlacePdf.click(); } catch (e) { yaDescargado = false; }
-    }
-
+  // Se trae el PDF apenas carga la pagina, pero SIN descargarlo. Asi, cuando
+  // el usuario diga que si al final, guardarlo es instantaneo y sincrono: no
+  // hay que esperar a la red en ese momento, y al ocurrir dentro de la misma
+  // pulsacion de tecla el navegador lo trata como una accion del usuario, que
+  // es lo que evita que lo bloquee.
+  function precargarPdf() {
     if (typeof window.fetch !== "function" || !window.URL || !URL.createObjectURL) {
-      directo();
       return;
     }
-
-    window.fetch(ruta, { cache: "force-cache" })
+    window.fetch(enlacePdf.getAttribute("href"), { cache: "force-cache" })
       .then(function (r) {
         if (!r.ok) { throw new Error("HTTP " + r.status); }
         return r.blob();
       })
       .then(function (blob) {
-        // octet-stream: con application/pdf algunos navegadores siguen
-        // prefiriendo abrir el archivo antes que guardarlo.
-        var url = URL.createObjectURL(new Blob([blob], { type: "application/octet-stream" }));
-        var a = document.createElement("a");
-        a.href = url;
-        a.download = nombre;
-        a.style.display = "none";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        // Revocar de inmediato aborta la descarga en Safari.
-        window.setTimeout(function () { URL.revokeObjectURL(url); }, 30000);
+        // octet-stream: con application/pdf algunos navegadores prefieren
+        // abrir el archivo en su visor en vez de guardarlo.
+        urlPdf = URL.createObjectURL(new Blob([blob], { type: "application/octet-stream" }));
       })
-      ["catch"](directo);
+      ["catch"](function () { urlPdf = null; });   // queda el enlace directo
+  }
+
+  // Guarda el PDF en la carpeta de descargas predeterminada del navegador.
+  //
+  // Limite que no depende de nosotros: si el usuario tiene activada la opcion
+  // "Preguntar donde guardar cada archivo", ninguna pagina puede saltarsela.
+  function descargarPdf() {
+    if (yaDescargado) { return; }
+    yaDescargado = true;
+
+    if (!urlPdf) {
+      // La precarga fallo o todavia no termina: se usa el enlace tal cual.
+      try { enlacePdf.click(); } catch (e) { yaDescargado = false; }
+      return;
+    }
+
+    var a = document.createElement("a");
+    a.href = urlPdf;
+    a.download = enlacePdf.getAttribute("download") || "propuesta.pdf";
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    // Revocar de inmediato aborta la descarga en Safari.
+    window.setTimeout(function () { URL.revokeObjectURL(urlPdf); urlPdf = null; }, 30000);
   }
 
   /* =====================================================================
@@ -572,26 +659,16 @@
     // El foco es lo que hace que el lector de pantalla lea la instruccion
     // sola, sin que el usuario tenga que buscar nada en la pagina.
     arranque.focus();
-    anunciar(texto);
 
-    // Ademas se intenta decirlo con la voz del navegador. speechSynthesis no
-    // esta sujeto a la politica de autoplay en la mayoria de navegadores, asi
-    // que suele sonar sin gesto previo. Si no suena, el lector de pantalla ya
-    // hizo el trabajo y no se pierde nada.
-    if (TTS && typeof window.SpeechSynthesisUtterance === "function") {
-      conVozLista(function (voz) {
-        if (!voz || estado !== "ESPERA_GESTO") { return; }
-        window.setTimeout(function () {
-          if (estado !== "ESPERA_GESTO") { return; }
-          var f = new window.SpeechSynthesisUtterance(texto);
-          f.lang = "es-CO";
-          f.voice = voz;
-          f.rate = 0.95;
-          f.pitch = 1.02;
-          try { TTS.speak(f); } catch (e) { /* sin efecto */ }
-        }, SILENCIO_INICIAL_MS);
-      });
-    }
+    // Se dice con hablar(), igual que todo lo demas, para que la instruccion
+    // de arranque reciba el mismo calentamiento contra el recorte. Antes se
+    // sintetizaba aparte y era justo la frase que mas se cortaba: es la
+    // primera de la sesion, con el canal de audio recien despertado.
+    //
+    // speechSynthesis no esta sujeto a la politica de autoplay en la mayoria
+    // de navegadores, asi que suele sonar sin gesto previo. Si no suena, el
+    // lector de pantalla ya leyo el aria-label y no se pierde nada.
+    hablar(texto);
   }
 
   function comenzar() {
@@ -599,11 +676,7 @@
     yaArranco = true;
     if (TTS) { TTS.cancel(); }
 
-    // Con un gesto del usuario ya confirmado se puede despertar el audio y
-    // reintentar la descarga: Chrome bloquea descargas automaticas en
-    // pestanas que todavia no han recibido ninguno.
     despertarSalida();
-    descargarPdf();
 
     arranque.setAttribute("aria-label", "Reproduciendo.");
     arranque.blur();
@@ -704,6 +777,11 @@
     if (estado === "PREGUNTA_CONTACTO") {
       if (r === "si") { pedirNumero(); }
       else { despedirse(); }
+      return;
+    }
+
+    if (estado === "PREGUNTA_PDF") {
+      terminar(r === "si");
       return;
     }
 
@@ -907,18 +985,59 @@
     hablar(
       "Listo. Su número ya quedó registrado. " +
       "Uno de nuestros aliados se va a comunicar con usted para coordinar " +
-      "su envío. Muchas gracias por regalarnos su tiempo, y que ese guiso " +
-      "le quede como en casa."
+      "su envío.",
+      preguntarPdf
     );
   }
 
   function despedirse() {
-    estado = "FIN";
     window.clearTimeout(relojDictado);
     detenerMicrofono();
     hablar(
-      "Con mucho gusto. Gracias por darnos un rato de su tiempo y de su " +
-      "atención. Que ese guiso le quede como en casa. Hasta pronto."
+      "Con mucho gusto. Gracias por darnos un rato de su tiempo y de su atención.",
+      preguntarPdf
+    );
+  }
+
+  /* =====================================================================
+     ESTADO 8 — La propuesta en PDF, al final y solo si la quiere
+     ===================================================================== */
+
+  // La descarga va aqui, de ultimas, y nunca al abrir la pagina. En un celular
+  // el gestor de descargas se toma la pantalla apenas empieza a bajar el
+  // archivo: si eso pasa al principio, la pagina se queda muda justo cuando
+  // iba a hablar y el usuario no entiende que ocurrio. Al final ya no
+  // interrumpe nada, porque no queda nada por decir.
+  function preguntarPdf() {
+    estado = "PREGUNTA_PDF";
+    reintentos = 0;
+    hablar(
+      "Una última cosa. ¿Desea descargar nuestra propuesta? " +
+      "Es un solo párrafo, de diez líneas, escrito para que su lector de " +
+      "pantalla se lo lea de corrido. Responda sí, o no.",
+      function () { escuchar(oirSiNo); }
+    );
+  }
+
+  function terminar(conPdf) {
+    estado = "FIN";
+    detenerMicrofono();
+
+    if (conPdf) {
+      // Se descarga antes de hablar: asi ocurre dentro de la misma pulsacion
+      // de tecla cuando la respuesta vino del teclado, y el navegador la trata
+      // como una accion del usuario en vez de bloquearla.
+      descargarPdf();
+      hablar(
+        "Listo, ya lo tiene en su carpeta de descargas. " +
+        "Que ese guiso le quede como en casa. Hasta pronto."
+      );
+      return;
+    }
+
+    hablar(
+      "Perfecto, se lo dejo así. " +
+      "Que ese guiso le quede como en casa. Hasta pronto."
     );
   }
 
@@ -926,7 +1045,12 @@
      Arranque
      ===================================================================== */
 
-  descargarPdf();
+  // La descarga NO se dispara aqui. En un celular, el gestor de descargas se
+  // toma la pantalla apenas empieza a bajar el archivo, y la pagina se queda
+  // muda justo cuando iba a hablar: el usuario no entiende que esta pasando.
+  // El PDF se ofrece al final, cuando la conversacion ya termino y que el
+  // sistema tome el control no le quita nada a nadie.
+  precargarPdf();
   if (TTS && typeof TTS.getVoices === "function") { TTS.getVoices(); }
   prepararArranque();
 

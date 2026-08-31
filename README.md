@@ -73,8 +73,7 @@ en `true` y llene `NUMERO_WHATSAPP` en `script.js`.
    fondo de la granja desenfocado. Todo ocurre por voz.
 4. Al cargar, la superficie de arranque recibe el foco y el sistema le lee
    *«toque la pantalla»* en celular, o *«oprima cualquier tecla»* en computador.
-5. Con ese gesto arranca el audio ASMR, y se descarga sola la
-   propuesta en PDF.
+5. Con ese gesto arranca el audio ASMR.
 6. Al terminar, una voz en español pregunta: **«¿Desea reproducir la experiencia
    nuevamente?»** Reconocimiento de voz para **sí** o **no**.
 7. Si dice **no**, pregunta: **«¿Desea contactar a Tierra Fresca?»**
@@ -86,6 +85,8 @@ en `true` y llene `NUMERO_WHATSAPP` en `script.js`.
    se lo lee otra vez sin tocarlo.
 9. Al confirmar: *«Su número ya quedó registrado. Uno de nuestros aliados se va
    a comunicar con usted para coordinar su envío.»*
+10. Y de últimas, por las dos ramas: **«¿Desea descargar nuestra propuesta?»**
+    Solo si dice que sí se descarga el PDF.
 
 En cada paso hay un camino alterno por teclado: cualquier tecla para arrancar,
 `S` para sí, `N` para no, `R` para que le repita el número, las teclas numéricas
@@ -110,7 +111,9 @@ ESPERA_GESTO ──gesto──> REPRODUCIENDO ──fin del audio──> PREGUNT
                                      │      └─────────┘
                                      │ sí
                                      v
-                              registro + despedida
+                                  registro
+                                     │
+                    (ambas ramas) ───┴───> PREGUNTA_PDF ──> FIN
 ```
 
 ## Estructura
@@ -261,32 +264,62 @@ Para instalar voces en español en Windows:
 **Configuración → Hora e idioma → Voz → Administrar voces → Agregar voces →
 Español**.
 
-### El segundo en blanco antes de cada frase
+### El arranque recortado de la voz: tres problemas, tres capas
 
-La salida de audio del sistema se duerme cuando lleva un rato en silencio, y al
-despertar se come los primeros 200 a 400 milisegundos: la primera sílaba de cada
-frase se perdía.
+La voz se comía el principio de cada frase. No era un problema, eran tres a la
+vez, y cada uno se arregla distinto. Por eso `hablar()` es más enrevesado de lo
+que parecería necesario:
 
-Antes de hablar, la página manda un segundo de silencio real por WebAudio. El
-buffer no es silencio absoluto sino una amplitud mínima e inaudible, porque
-algunos controladores detectan el silencio puro y apagan el canal igual, que es
-justo lo que se quiere evitar. Cuando entra la voz, el dispositivo ya está
-abierto.
+1. **El dispositivo de salida se duerme** cuando lleva un rato en silencio, y al
+   despertar se come los primeros 200 a 400 milisegundos. Se le manda un
+   silencio real por WebAudio antes de hablar. El buffer no es silencio absoluto
+   sino una amplitud mínima e inaudible, porque algunos controladores detectan
+   el silencio puro y apagan el canal igual, que es justo lo que se quiere
+   evitar.
 
-Se ajusta con la constante `SILENCIO_INICIAL_MS`.
+2. **El motor de voz abre su propio canal de audio**, distinto del de WebAudio,
+   y ese también arranca frío. Por eso se dice primero una frase de
+   calentamiento que solo tiene comas: abre el canal y no pronuncia nada. El
+   recorte se lo lleva ella.
 
-### La descarga del PDF
+3. **Aun así puede quedar un recorte de milisegundos.** Por eso la frase real
+   también empieza con comas: si algo se pierde, se pierde una pausa y no la
+   primera sílaba de la primera palabra.
 
-Se hace con `fetch` a Blob y un enlace `download`, no pinchando el `.pdf`
-directamente. La diferencia importa: al pinchar un PDF, Chrome y Edge lo abren
-en su visor integrado; con este método lo **guardan como archivo en la carpeta
-de descargas predeterminada**, sin visor de por medio.
+Se usan comas y no puntos suspensivos a propósito: todos los motores leen la
+coma como pausa y ninguno la pronuncia; los puntos suspensivos algunos sí los
+verbalizan.
 
-Un límite que conviene tener claro: si el usuario tiene activada la opción
-*"Preguntar dónde guardar cada archivo"* en su navegador, ninguna página web del
-mundo puede saltársela. Es una preferencia suya, no algo que el sitio decida.
+Hay una cuarta pieza, para otro problema: Chrome deja de hablar a los quince
+segundos si nadie lo empuja. Un `pause()`/`resume()` periódico mantiene viva la
+locución. En móvil no se aplica, porque allí `pause()` está roto y produce
+cortes propios.
 
----
+El silencio inicial se ajusta con `SILENCIO_INICIAL_MS`.
+
+### El PDF se ofrece al final, y nunca al abrir
+
+La primera versión descargaba el PDF apenas cargaba la página. En computador
+pasaba desapercibido; **en celular arruinaba la experiencia entera**: el gestor
+de descargas del sistema se toma la pantalla apenas empieza a bajar el archivo,
+la página pierde el foco justo cuando iba a hablar, y el usuario se queda sin
+saber qué pasó. Para alguien que no ve la pantalla, eso es quedarse a oscuras
+sin ninguna pista.
+
+Ahora el PDF es la última pregunta de la conversación. Cuando ya no queda nada
+por decir, que el sistema tome el control no le quita nada a nadie.
+
+El archivo sí se **precarga** al abrir la página, a memoria, sin descargarlo.
+Así, cuando el usuario dice que sí, guardarlo es instantáneo y síncrono: no hay
+que esperar a la red en ese momento, y al ocurrir dentro de la misma pulsación
+de tecla el navegador lo trata como una acción del usuario en vez de
+bloquearlo.
+
+Se guarda como Blob con tipo `octet-stream`, no pinchando el `.pdf`: al pinchar
+un PDF, Chrome y Edge lo abren en su visor integrado en vez de guardarlo.
+
+Un límite que no depende de nosotros: si el usuario tiene activada la opción
+*"Preguntar dónde guardar cada archivo"*, ninguna página web puede saltársela.
 
 ## Accesibilidad
 
@@ -312,35 +345,42 @@ pierde: va por voz y por lector de pantalla.
 Verificadas en navegador, con el micrófono bloqueado a propósito para forzar el
 camino de contingencia por teclado:
 
-- Cadena completa: gesto → audio → *«¿Desea reproducir nuevamente?»* → **no** →
-  *«¿Desea contactar a Tierra Fresca?»* → **sí** → diez dígitos de corrido →
-  lectura de vuelta agrupada → **repítalo** → **sí** → mensaje de registro.
-- El número queda en `localStorage` y la URL no cambia: no hay salto a WhatsApp.
-- Rama de despedida (**no** en la pregunta de contacto).
-- Interpretación de sí/no, once casos: *«claro que sí»* → sí, *«no gracias»* →
-  no, *«nunca»* → no, *«no, sí»* → ambiguo y vuelve a preguntar.
-- Extracción de dígitos: palabras sueltas, cifras agrupadas (*«315»*),
-  compuestos (*«treinta»*, *«veintitrés»*), ruido (*«ehh... siete»* → 7), y
-  frases sin números (→ vacío). Un celular dicho de corrido de las cinco formas
-  probadas devuelve los diez dígitos correctos.
-- Agrupación de la lectura: `3158884433` → *«3, 1, 5. 8, 8, 8. 4, 4, 3, 3»*, sin
-  grupos finales de un solo dígito.
-- Puntuación de voces contra una lista simulada: gana *Microsoft Salomé Online
-  (Natural)* sobre *Google español*, sobre *Sabina* local, sobre *Helena*, y las
-  voces en inglés quedan descartadas.
-- PDF: una página, un párrafo, diez líneas exactas, texto extraíble en orden de
-  lectura.
-- Pantalla: vacía. Sólo el fondo desenfocado, sin texto visible.
+- **Cadena de registro completa y real**, no simulada: desde la página →
+  Apps Script → hoja de cálculo → `registros.json` del repositorio. El número
+  de prueba `3009998877` llegó a GitHub.
+- Rama con contacto: audio → *«¿reproducir de nuevo?»* → **no** →
+  *«¿contactar?»* → **sí** → diez dígitos de corrido → lectura de vuelta
+  agrupada → **sí** → mensaje de registro → *«¿descargar la propuesta?»*
+- Rama sin contacto: **no** → despedida → *«¿descargar la propuesta?»*
+- Las dos respuestas del PDF: **sí** descarga desde el blob precargado (una
+  sola petición de red en toda la sesión, la de la precarga); **no** cierra sin
+  descargar nada.
+- **El PDF no se descarga al abrir la página.** Comprobado mirando las
+  peticiones de red: hay una precarga y ninguna descarga.
+- Endpoint de Apps Script sin sesión de Google: responde
+  `{"ok":true,...}` en vez de redirigir al login. Es lo que verá el navegador
+  del profesor.
+- Interpretación de sí/no, once casos, incluidos los ambiguos.
+- Extracción de dígitos: palabras sueltas, cifras agrupadas, compuestos, ruido
+  y frases sin números.
+- Agrupación de la lectura: `3009998877` → *«3, 0, 0. 9, 9, 9. 8, 8, 7, 7»*.
+- Puntuación de voces contra una lista simulada: gana la neuronal en español
+  sobre la de Google, sobre la local, y las de inglés quedan descartadas.
+- PDF: una página, un párrafo, diez líneas exactas, texto extraíble en orden.
+- Pantalla: vacía. Sólo el fondo desenfocado.
 
-Dos fallos reales que salieron de estas pruebas y ya están corregidos:
+Fallos reales que salieron de estas pruebas y ya están corregidos:
 
 - `ENDPOINT_REGISTRO` no estaba declarada, y el `ReferenceError` reventaba
   dentro de `registrar()` justo antes del mensaje de cierre: el número se
   guardaba, pero el usuario nunca oía que había quedado registrado.
 - Un error tardío del micrófono podía llegar con la conversación ya cerrada y
-  pisar ese mismo mensaje de cierre con el aviso del teclado.
+  pisar ese mismo mensaje de cierre.
+- El despliegue de Apps Script exigía cuenta de Google, porque estaba puesto a
+  ejecutarse *como el usuario que accede*. Con esa opción, Google no ofrece el
+  acceso anónimo. Corregido a ejecutarse como el dueño.
 
 Sin probar todavía, porque necesita un equipo con micrófono y voz española
 instalada: el reconocimiento de voz real y la síntesis en español. En este
-equipo no hay ninguna voz española instalada, así que la degradación por
-`aria-live` es la que quedó ejercitada.
+equipo no hay ninguna voz española, así que lo ejercitado es la degradación
+por `aria-live`.
