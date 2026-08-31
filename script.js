@@ -420,13 +420,20 @@
       if (!contexto) { contexto = new AC(); }
       if (contexto.state === "suspended") { contexto.resume(); }
 
-      var t0 = contexto.currentTime;
+      // Se programa con un pequeno margen por delante. resume() es asincrono:
+      // si se programara en currentTime exacto, el contexto podria seguir
+      // dormido en ese instante y el tono no llegaria a sonar. Esa era una de
+      // las razones por las que a veces no se oia nada.
+      var t0 = contexto.currentTime + 0.06;
       var i, osc, gan, ini, fin;
 
       for (i = 0; i < frecuencias.length; i++) {
         osc = contexto.createOscillator();
         gan = contexto.createGain();
-        osc.type = "sine";
+        // Triangular y no senoidal: una onda pura de 700 Hz se pierde en el
+        // altavoz de un celular, que reproduce mal los tonos limpios. La
+        // triangular lleva armonicos y corta mucho mejor.
+        osc.type = "triangle";
         osc.frequency.value = frecuencias[i];
 
         ini = t0 + (i * duracion);
@@ -448,10 +455,14 @@
   }
 
   // Sube: te toca hablar.
-  function tonoTeToca() { tono([620, 930], 0.13, 0.20); }
+  function tonoTeToca() { tono([700, 1050], 0.17, 0.55); }
 
   // Baja: ya te oi, puedes parar.
-  function tonoYaTeOi() { tono([930, 620], 0.11, 0.16); }
+  //
+  // Termina mas grave y mas largo que el de apertura, para que se distingan
+  // sin tener que pensarlo. El volumen es casi el mismo: al principio lo puse
+  // mas bajo por discrecion y el resultado fue que no se oia.
+  function tonoYaTeOi() { tono([1050, 560], 0.20, 0.50); }
 
   /* =====================================================================
      Voz de la pagina
@@ -729,8 +740,11 @@
       // canal sigue abierto, y esperar otro segundo entero se siente como si
       // la pagina se hubiera quedado pensando. Eso era lo que hacia que la
       // pregunta del PDF tardara tanto en llegar despues del numero.
+      // Entre dos frases seguidas basta con medio segundo. Antes eran 200 ms,
+      // y con eso la voz arrancaba encima del tono de cierre, que dura algo
+      // mas de cuatro decimas: se oia el principio del pitido y nada mas.
       var seguido = (new Date()).getTime() - ultimaVezQueHablo < 5000;
-      var espera = seguido ? 200 : SILENCIO_INICIAL_MS;
+      var espera = seguido ? 550 : SILENCIO_INICIAL_MS;
 
       window.setTimeout(function () {
         ultimaVezQueHablo = (new Date()).getTime();
@@ -999,12 +1013,14 @@
     // funcion se llama tambien antes de cada frase de la pagina, por
     // seguridad, y ahi no hay ningun turno que cerrar.
     var estabaEscuchando = queremosEscuchar;
-
     queremosEscuchar = false;
+
+    // El tono va PRIMERO. Antes estaba despues de un "return" que se dispara
+    // cuando no hay objeto de reconocimiento, y en ese camino no sonaba nunca.
+    if (estabaEscuchando) { tonoYaTeOi(); }
+
     if (!reconocimiento) { return; }
     try { reconocimiento.abort(); } catch (e) { /* ya estaba detenido */ }
-
-    if (estabaEscuchando) { tonoYaTeOi(); }
   }
 
   // escuchar(manejador): enciende el microfono y entrega cada frase final al
