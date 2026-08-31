@@ -9,27 +9,36 @@
   ======================================================================
   Pagina de diagnostico. No es parte de la campana.
 
-  Existe para contestar con hechos una pregunta que estabamos discutiendo
-  a base de suposiciones: si este aparato deja que una pagina hable sin
-  que el usuario toque nada.
+  Existe porque la campana funcionaba en unos aparatos y en otros no, y
+  discutirlo a base de suposiciones no llevaba a ningun lado. Esta pagina
+  le hace tres preguntas al aparato y ensena las respuestas.
 
-  La respuesta no es la misma en todas partes. Chrome de Android suele
-  permitirlo, Edge no, y de iOS teniamos versiones encontradas. En vez de
-  seguir creyendo, se le pregunta al aparato.
+  PRUEBA 1 — ¿habla sin que nadie toque nada?
+      Se intenta hablar al abrir. La prueba no es que speak() no de error:
+      es que dispare "onstart". En iOS, speaking llega a devolver true con
+      la locucion encolada y muda.
 
-  La prueba es en dos actos:
+      Un navegador solo deja hablar sola a una pagina que ya conoce. Lleva
+      la cuenta de cuanto audio ha sonado antes en ese sitio, y hasta que
+      no acumula suficiente, la bloquea. Por eso un telefono que ya visito
+      la campana varias veces habla solo, y uno que la abre por primera vez
+      no. Es la diferencia entre probarla uno mismo y prestarsela a
+      alguien.
 
-    1. Al abrir, la pagina intenta hablar SIN que nadie toque nada, y
-       apunta si el motor llego a arrancar de verdad. La prueba no es que
-       speak() no de error, sino que dispare "onstart": en iOS, speaking
-       llega a devolver true con la locucion encolada y muda.
+  PRUEBA 2 — cancelar y hablar en el mismo instante.
+      Es lo que hacia la campana al tocar la pantalla: limpiaba la cola de
+      la bienvenida bloqueada y hablaba enseguida. cancel() no vacia la
+      cola en el acto, y la locucion que se mete en medio puede irse con la
+      basura.
 
-    2. Despues hay un boton, para comprobar que con un gesto de por medio
-       si habla. Si el primer acto falla y el segundo funciona, este
-       aparato exige el gesto y no hay vuelta de hoja.
+  PRUEBA 3 — cancelar, esperar un respiro, y hablar.
+      Lo mismo, pero dandole tiempo a la limpieza.
 
-  Todo lo que averigua se muestra en pantalla en letra grande y se dice
-  en voz alta, para que sirva igual mirandola que escuchandola.
+  Si la 2 falla y la 3 funciona, la causa esta demostrada y el arreglo es
+  exactamente ese respiro.
+
+  Todo lo que averigua se ensena en letra grande y se dice en voz alta,
+  para que sirva igual mirandola que escuchandola.
   ======================================================================
 -->
 
@@ -63,6 +72,7 @@
     border: 0; border-radius: 12px; cursor: pointer;
   }
   button:focus-visible { outline: 4px solid #ffd24a; outline-offset: 3px; }
+  button[disabled] { opacity: .45; }
 
   code { font-size: .9em; word-break: break-all; }
   @media (prefers-color-scheme: dark) {
@@ -74,7 +84,7 @@
 </head>
 <body>
 
-<h1>¿Este aparato deja hablar a la página sin tocarla?</h1>
+<h1>¿Por qué esta página se queda muda en unos teléfonos y en otros no?</h1>
 <p class="sub">Prueba de la Granja Tierra Fresca. No forma parte de la campaña.</p>
 
 <div class="resultado duda" id="veredicto" role="status" aria-live="polite">
@@ -84,7 +94,7 @@
 <dl id="datos"></dl>
 
 <button id="probar" type="button">
-  Ahora tócame para probar con gesto
+  Ahora tócame: aquí empieza la prueba de verdad
 </button>
 
 <script>
@@ -97,7 +107,6 @@
   var boton = document.getElementById("probar");
 
   var sonoSinGesto = false;
-  var sonoConGesto = false;
 
   function apuntar(titulo, valor) {
     var dt = document.createElement("dt");
@@ -113,19 +122,18 @@
     veredicto.textContent = texto;
   }
 
-  // Se habla siempre con lang en espanol y sin elegir voz: aqui no interesa
-  // que voz sea, sino si el motor arranca.
-  //
   // Cada frase empieza por una palabra desechable, igual que en la campana.
   // Los motores de voz se comen el principio de la primera locucion despues
   // de un silencio, y aqui eso importa el doble: si se comieran el "Prueba
-  // uno", quien esta escuchando no sabria cual de las dos pruebas oyo.
-  function decir(texto, alArrancar) {
-    if (!TTS || typeof window.SpeechSynthesisUtterance !== "function") { return; }
+  // uno", quien esta escuchando no sabria cual de las pruebas oyo.
+  //
+  // El idioma se pide como "es" a secas, no "es-CO". Un motor de celular
+  // suele traer es-ES o es-US, y pedirle un pais que no tiene es una forma
+  // de quedarse mudo sin enterarse.
+  function nueva(texto) {
     var u = new window.SpeechSynthesisUtterance("Atención. " + texto);
-    u.lang = "es-CO";
-    u.onstart = function () { if (alArrancar) { alArrancar(); } };
-    try { TTS.speak(u); } catch (e) { /* sin efecto */ }
+    u.lang = "es";
+    return u;
   }
 
   // ---- Lo que se puede saber sin probar nada -----------------------------
@@ -134,7 +142,7 @@
   apuntar("¿Existe reconocimiento de voz?",
           (window.SpeechRecognition || window.webkitSpeechRecognition) ? "Sí" : "No");
 
-  if (!TTS) {
+  if (!TTS || typeof window.SpeechSynthesisUtterance !== "function") {
     veredicto_("no", "Este navegador no tiene voz sintética. La página no puede hablar aquí de ninguna forma.");
     boton.hidden = true;
     return;
@@ -145,56 +153,112 @@
     var esp = [];
     var i;
     for (i = 0; i < v.length; i++) {
-      if (/^es/i.test(v[i].lang)) { esp.push(v[i].name); }
+      if (/^es/i.test(v[i].lang)) { esp.push(v[i].name + " (" + v[i].lang + ")"); }
     }
     apuntar("Voces instaladas", v.length ? String(v.length) : "todavía ninguna");
     apuntar("Voces en español", esp.length ? esp.join(", ") : "ninguna");
   }
   window.setTimeout(listarVoces, 1500);
 
-  // ---- Acto 1: hablar sin que nadie toque nada ---------------------------
-  decir("Prueba uno. Si oyes esta frase, este aparato deja hablar a la página " +
-        "sin que toques nada.",
-        function () { sonoSinGesto = true; });
+  // ---- Prueba 1: hablar sin que nadie toque nada -------------------------
+  var u1 = nueva("Prueba uno. Si oyes esta frase, este aparato deja hablar a la " +
+                 "página sin que toques nada.");
+  u1.onstart = function () { sonoSinGesto = true; };
+  try { TTS.speak(u1); } catch (e) { /* sin efecto */ }
 
   window.setTimeout(function () {
-    apuntar("¿Habló sin tocar la pantalla?", sonoSinGesto ? "SÍ" : "NO");
+    apuntar("1. ¿Habló sin tocar la pantalla?", sonoSinGesto ? "SÍ" : "NO");
     if (sonoSinGesto) {
-      veredicto_("si",
-        "Este aparato SÍ deja hablar a la página sin tocarla. Si en la " +
-        "campaña no hablaba, la causa es otra y hay que buscarla.");
+      veredicto_("duda",
+        "Este aparato deja hablar a la página sin tocarla. Es señal de que ya " +
+        "conoce el sitio. Toca el botón para seguir con la prueba importante.");
     } else {
-      veredicto_("no",
-        "Este aparato NO deja hablar a la página hasta que la toques. " +
-        "Ahora pulsa el botón de abajo para confirmar que con un toque sí habla.");
+      veredicto_("duda",
+        "Este aparato NO deja hablar a la página hasta que la toques. Es lo " +
+        "normal la primera vez que se abre un sitio. Toca el botón de abajo: " +
+        "ahí viene lo que de verdad importa.");
     }
   }, 4000);
 
-  // ---- Acto 2: hablar con un gesto de por medio --------------------------
-  boton.addEventListener("click", function () {
-    // Sincrono y dentro del gesto: es lo que exige iOS.
-    decir("Prueba dos. Esta frase salió después de que tocaras la pantalla.",
-          function () { sonoConGesto = true; });
+  // ---- Pruebas 2 y 3: dentro del gesto -----------------------------------
+  //
+  // Las dos hacen lo mismo salvo por un detalle: la 2 habla en el mismo
+  // instante en que cancela, y la 3 le deja un respiro a la cancelacion.
+  // Ese detalle es toda la hipotesis.
+  function intentar(texto, respiro, cuandoSeSepa) {
+    var arranco = false;
+    var motivo = "no arrancó, y sin decir por qué";
+
+    function lanzar() {
+      var u = nueva(texto);
+      u.onstart = function () { arranco = true; };
+      u.onerror = function (ev) {
+        motivo = "error: " + ((ev && ev.error) ? ev.error : "sin detalle");
+      };
+      try { TTS.speak(u); } catch (e) { motivo = "speak() lanzó una excepción"; }
+    }
+
+    try { TTS.cancel(); } catch (e) { /* sin efecto */ }
+    if (respiro) { window.setTimeout(lanzar, respiro); } else { lanzar(); }
 
     window.setTimeout(function () {
-      apuntar("¿Habló al tocar la pantalla?", sonoConGesto ? "SÍ" : "NO");
+      cuandoSeSepa(arranco, motivo);
+    }, 3000 + respiro);
+  }
 
-      if (sonoSinGesto && sonoConGesto) {
-        veredicto_("si", "Habla en los dos casos. Este aparato no impone ninguna restricción.");
-      } else if (!sonoSinGesto && sonoConGesto) {
-        veredicto_("duda",
-          "Confirmado: este aparato exige un toque antes de dejar hablar a la " +
-          "página. Es una regla del sistema y no se puede desactivar desde el código.");
-      } else if (sonoSinGesto && !sonoConGesto) {
-        veredicto_("duda",
-          "Raro: habló sola pero no al tocar. Vuelve a intentarlo, puede haber " +
-          "sido un tropiezo del motor de voz.");
-      } else {
-        veredicto_("no",
-          "No habló en ninguno de los dos casos. Lo más probable es que el " +
-          "aparato esté en silencio, con el volumen bajo, o sin ninguna voz instalada.");
-      }
-    }, 3000);
+  boton.addEventListener("click", function () {
+    boton.disabled = true;
+    boton.textContent = "Probando… espera y escucha";
+    veredicto_("duda", "Probando. Vas a oír dos frases, o quizá solo una. Espera unos segundos.");
+
+    // Prueba 2 — cancelar y hablar en el mismo instante.
+    intentar("Prueba dos. Esta frase salió cancelando y hablando al mismo tiempo.",
+             0,
+             function (sono2, motivo2) {
+      apuntar("2. Cancelar y hablar a la vez", sono2 ? "SÍ habló" : "NO habló — " + motivo2);
+
+      // Prueba 3 — cancelar, esperar, y hablar.
+      intentar("Prueba tres. Esta frase salió dejando un respiro después de cancelar.",
+               120,
+               function (sono3, motivo3) {
+        apuntar("3. Cancelar, esperar y hablar", sono3 ? "SÍ habló" : "NO habló — " + motivo3);
+
+        boton.textContent = "Volver a probar";
+        boton.disabled = false;
+
+        var v;
+        if (!sono2 && sono3) {
+          v = ["si",
+               "DEMOSTRADO. Este aparato pierde la voz cuando se cancela y se " +
+               "habla en el mismo instante, y la recupera si se le deja un " +
+               "respiro. Es exactamente lo que le pasaba a la campaña, y el " +
+               "arreglo ya está hecho."];
+        } else if (sono2 && sono3) {
+          v = ["si",
+               "Este aparato habla en los dos casos. Aquí la campaña debería " +
+               "funcionar. Si no lo hace, la causa es otra."];
+        } else if (!sono2 && !sono3) {
+          v = ["no",
+               "Este aparato no habló en ninguno de los dos casos. Lo más " +
+               "probable es que esté en silencio, con el volumen bajo, o sin " +
+               "ninguna voz instalada. Mira arriba cuántas voces aparecen."];
+        } else {
+          v = ["duda",
+               "Habló al cancelar y no al esperar, que es al revés de lo " +
+               "esperado. Vuelve a probar: puede haber sido un tropiezo suelto " +
+               "del motor de voz."];
+        }
+        veredicto_(v[0], v[1]);
+
+        // El veredicto tambien se dice, que para eso es una prueba de voz.
+        window.setTimeout(function () {
+          try { TTS.cancel(); } catch (e) { /* sin efecto */ }
+          window.setTimeout(function () {
+            try { TTS.speak(nueva(v[1])); } catch (e) { /* sin efecto */ }
+          }, 120);
+        }, 400);
+      });
+    });
   });
 })();
 </script>

@@ -509,6 +509,13 @@
     return null;
   }
 
+  // La ultima buena voz que se vio. Ver la nota del arranque.
+  var mejorVozVista = null;
+  function recordarMejorVoz() {
+    var v = vozEspanol();
+    if (v) { mejorVozVista = v; }
+  }
+
   function vozEspanol() {
     if (!TTS) { return null; }
     var voces = TTS.getVoices() || [];
@@ -796,18 +803,24 @@
       if (arranco || listo || !TTS) { return; }
       var local = vozLocal(idioma);
       if (!local || (voz && local.name === voz.name)) { return; }
-      try {
-        TTS.cancel();
-        var reintento = nuevaFrase(texto, local, idioma);
-        reintento.onstart = function () {
-          arranco = true;
-          algunaVozSono = true;
-          callarAnuncio();
-        };
-        reintento.onend = finalizar;
-        reintento.onerror = finalizar;
-        TTS.speak(reintento);
-      } catch (e) { /* se deja como estaba */ }
+      // Entre cancelar y volver a hablar va un respiro, por la misma razon
+      // que en la locucion del toque: cancel() no vacia la cola en el acto,
+      // y lo que se meta inmediatamente detras se va con la basura.
+      try { TTS.cancel(); } catch (e) { /* sin efecto */ }
+      window.setTimeout(function () {
+        if (arranco || listo || !TTS) { return; }
+        try {
+          var reintento = nuevaFrase(texto, local, idioma);
+          reintento.onstart = function () {
+            arranco = true;
+            algunaVozSono = true;
+            callarAnuncio();
+          };
+          reintento.onend = finalizar;
+          reintento.onerror = finalizar;
+          TTS.speak(reintento);
+        } catch (e) { /* se deja como estaba */ }
+      }, 150);
     }, 2500);
   }
 
@@ -839,34 +852,86 @@
     // Aqui no se puede esperar a que terminen de cargar las voces: la
     // locucion tiene que salir dentro del gesto o iOS la descarta. Se usa la
     // mejor voz que haya en este preciso instante, y su idioma manda.
-    var voz = vozEspanol();
+    var voz = vozEspanol() || mejorVozVista;
     idiomaHablado = idiomaDeLaVoz(voz);
 
     var pack = IDIOMAS[idiomaHablado] || IDIOMAS.es || {};
     var dicho = conArranqueDesechable(frase(idiomaHablado, clave, datos),
                                       idiomaHablado);
 
-    var locucion = new window.SpeechSynthesisUtterance(dicho);
-    locucion.lang = pack.lang || "es-CO";
-    locucion.rate = VELOCIDAD_VOZ;
-    locucion.pitch = 1.02;
-    if (voz) { locucion.voice = voz; }
+    // El idioma se pide en la forma mas general que sirva. Con una voz
+    // elegida se usa el suyo, que existe con seguridad. Sin ella se pide
+    // "es" a secas y no "es-CO": el motor de un celular suele traer es-ES o
+    // es-US, y pedirle un pais que no tiene es una forma de quedarse mudo.
+    function armar(conVoz) {
+      var f = new window.SpeechSynthesisUtterance(dicho);
+      f.lang = (conVoz && conVoz.lang) ? conVoz.lang : idiomaHablado;
+      f.rate = VELOCIDAD_VOZ;
+      f.pitch = 1.02;
+      f.volume = 1;
+      if (conVoz) { f.voice = conVoz; }
+      return f;
+    }
 
     var listo = false;
-    function finalizar() {
+    var arranco = false;
+    var reintentado = false;
+
+    // cerrar() da la frase por dicha pase lo que pase. finalizar() solo la da
+    // por dicha si ya no queda nada por intentar: un error instantaneo no
+    // puede cerrar el paso mientras el reintento sigue vivo, porque entonces
+    // el MP3 arrancaba encima de una voz que todavia iba a hablar.
+    function cerrar() {
       if (listo) { return; }
       listo = true;
       window.setTimeout(seguir, 250);
     }
-    locucion.onstart = function () {
+    function finalizar() {
+      if (listo) { return; }
+      if (!arranco && !reintentado) { return; }
+      cerrar();
+    }
+    function alArrancar() {
+      arranco = true;
       algunaVozSono = true;
       callarAnuncio();
-    };
+    }
+
+    var locucion = armar(voz);
+    locucion.onstart = alArrancar;
     locucion.onend = finalizar;
     locucion.onerror = finalizar;
-    window.setTimeout(finalizar, tiempoDeLectura(texto) + 5000);
 
-    try { TTS.speak(locucion); } catch (e) { finalizar(); }
+    // Red dura: si ni el intento ni el reintento dicen nada, el recorrido
+    // sigue igual. Quedarse esperando en silencio seria peor que hablar mal.
+    window.setTimeout(cerrar, tiempoDeLectura(texto) + 5000);
+
+    try { TTS.speak(locucion); } catch (e) { reintentado = true; finalizar(); }
+
+    // Reintento. Esta es la locucion que desbloquea el motor de voz para toda
+    // la sesion, asi que no basta con lanzarla: hay que comprobar que salio.
+    // Si a los 350 ms no ha empezado a sonar, se limpia la cola, se deja un
+    // respiro para que la limpieza termine, y se vuelve a hablar. Esta vez
+    // sin voz explicita, por si el fallo fue que esa voz no estaba
+    // disponible; el motor elige la que tenga.
+    //
+    // El medio segundo que suma todo esto cabe de sobra dentro del permiso que
+    // deja un toque, que dura varios segundos.
+    window.setTimeout(function () {
+      if (arranco || listo || !TTS) { return; }
+      reintentado = true;
+      try { TTS.cancel(); } catch (e) { /* sin efecto */ }
+      window.setTimeout(function () {
+        if (arranco || listo || !TTS) { return; }
+        try {
+          var otra = armar(null);
+          otra.onstart = alArrancar;
+          otra.onend = finalizar;
+          otra.onerror = finalizar;
+          TTS.speak(otra);
+        } catch (e) { finalizar(); }
+      }, 150);
+    }, 350);
   }
 
 
@@ -1260,6 +1325,11 @@
     // ESPERA_PRIMERA_FRASE.
     window.setTimeout(function () {
       if (yaArranco) { return; }
+      // Se anota que la bienvenida entro en la cola del motor de voz. Puede
+      // que suene y puede que el navegador la bloquee, pero encolada esta, y
+      // eso es lo unico que hay que saber para decidir si hace falta
+      // cancelarla cuando el usuario toque la pantalla.
+      bienvenidaLanzada = true;
       hablar("bienvenida", alTerminarBienvenida);
     }, ESPERA_PRIMERA_FRASE);
   }
@@ -1283,6 +1353,7 @@
   }
 
   var bienvenidaTerminada = false;
+  var bienvenidaLanzada = false;
   var arrancarAlTerminar = false;
 
   // La bienvenida acabo de decirse. Si el usuario ya habia tocado la pantalla
@@ -1324,10 +1395,18 @@
     // hay algo que cancelar. En Edge se soltaban las dos locuciones juntas,
     // la encolada y la del toque, y el mensaje se oia repetido.
     //
-    // Cancelar aqui no rompe el desbloqueo de iOS: lo que ese sistema exige
-    // es que speak() se llame dentro del gesto, y hablarDeInmediato lo hace
-    // un instante despues, en el mismo gesto.
-    if (TTS) { TTS.cancel(); }
+    // Pero se cancela SOLO si de verdad quedo algo encolado. Cancelar por
+    // costumbre sale caro: cancel() no vacia la cola en el acto, y la
+    // locucion que se meta inmediatamente despues se va con la basura. Eso
+    // era lo que dejaba mudo al aparato que abria la pagina por primera vez,
+    // que es justo el caso de todo el que reciba el correo.
+    // La condicion es "se encolo Y no llego a terminar". Si termino, la cola
+    // ya esta vacia y cancelar solo sirve para tragarse la locucion que viene
+    // detras. Y si el usuario toca mientras suena, esto no se ejecuta: de eso
+    // se encarga la salida de arriba.
+    if (TTS && bienvenidaLanzada && !bienvenidaTerminada) {
+      try { TTS.cancel(); } catch (e) { /* sin efecto */ }
+    }
 
     despertarSalida();
     mantenerPantallaEncendida();
@@ -1750,7 +1829,18 @@
   // El PDF se ofrece al final, cuando la conversacion ya termino y que el
   // sistema tome el control no le quita nada a nadie.
   precargarPdf();
-  if (TTS && typeof TTS.getVoices === "function") { TTS.getVoices(); }
+
+  // El aparato tarda en enumerar sus voces, y la locucion del gesto no puede
+  // esperarlas: tiene que salir dentro del toque. Asi que se piden ya, y se
+  // guarda la mejor en cuanto aparezcan. Si el usuario toca la pantalla antes
+  // de que el motor termine, la locucion usa esta y no se queda sin ninguna.
+  if (TTS && typeof TTS.getVoices === "function") {
+    TTS.getVoices();
+    recordarMejorVoz();
+    if (typeof TTS.addEventListener === "function") {
+      TTS.addEventListener("voiceschanged", recordarMejorVoz);
+    }
+  }
   prepararArranque();
 
   // Por si el foco se pierde antes del gesto: el lector de pantalla necesita
