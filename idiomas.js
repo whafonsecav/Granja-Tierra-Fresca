@@ -55,6 +55,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
     bienvenida: "Tenemos un mensaje especial para ti. {aviso} Por favor, {gesto} para escuchar este mensaje que tenemos para ti.",
     puente: "Tenemos un mensaje especial para ti. {aviso} Aquí va.",
     arranca: "A continuación te reproduzco el mensaje que preparamos especialmente para ti.",
+    arrancaConAviso: "{aviso} A continuación te reproduzco el mensaje que preparamos especialmente para ti.",
     tocaOtraVez: "Por favor, {gesto} otra vez.",
 
     soloTeclado: "No puedo usar el micrófono, así que vamos por el teclado. " +
@@ -121,6 +122,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
     bienvenida: "We have a special message for you. {aviso} Please, {gesto} to hear this message we have for you.",
     puente: "We have a special message for you. {aviso} Here it goes.",
     arranca: "Here comes the message we prepared especially for you.",
+    arrancaConAviso: "{aviso} Here comes the message we prepared especially for you.",
     tocaOtraVez: "Please, {gesto} again.",
 
     soloTeclado: "I can't use the microphone, so let's go with the keyboard. " +
@@ -184,6 +186,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
     bienvenida: "Temos uma mensagem especial para você. {aviso} Por favor, {gesto} para ouvir esta mensagem que temos para você.",
     puente: "Temos uma mensagem especial para você. {aviso} Lá vai.",
     arranca: "A seguir vou reproduzir a mensagem que preparamos especialmente para você.",
+    arrancaConAviso: "{aviso} A seguir vou reproduzir a mensagem que preparamos especialmente para você.",
     tocaOtraVez: "Por favor, {gesto} de novo.",
 
     soloTeclado: "Não consigo usar o microfone, então vamos pelo teclado. " +
@@ -249,6 +252,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
     bienvenida: "Abbiamo un messaggio speciale per te. {aviso} Per favore, {gesto} per ascoltare questo messaggio che abbiamo per te.",
     puente: "Abbiamo un messaggio speciale per te. {aviso} Eccolo.",
     arranca: "Adesso ti riproduco il messaggio che abbiamo preparato apposta per te.",
+    arrancaConAviso: "{aviso} Adesso ti riproduco il messaggio che abbiamo preparato apposta per te.",
     tocaOtraVez: "Per favore, {gesto} di nuovo.",
 
     soloTeclado: "Non riesco a usare il microfono, quindi andiamo con la " +
@@ -312,6 +316,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
     bienvenida: "Nous avons un message spécial pour toi. {aviso} S'il te plaît, {gesto} pour écouter ce message que nous avons pour toi.",
     puente: "Nous avons un message spécial pour toi. {aviso} Le voici.",
     arranca: "Je te passe maintenant le message que nous avons préparé spécialement pour toi.",
+    arrancaConAviso: "{aviso} Je te passe maintenant le message que nous avons préparé spécialement pour toi.",
     tocaOtraVez: "S'il te plaît, {gesto} encore une fois.",
 
     soloTeclado: "Je ne peux pas utiliser le micro, alors passons au clavier. " +

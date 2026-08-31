@@ -167,6 +167,11 @@
   // y si el conteo de fallos viviera en esa misma variable se borraria solo
   // en cada vuelta: nunca llegaria a tres. Este cuenta aparte y sobrevive.
   var intentosSinNumero = 0;
+  // Cuenta las veces que se le da mas tiempo a alguien que YA dijo algunos
+  // digitos y se quedo callado. Es distinto de intentosSinNumero: aqui no se
+  // borra nada ni se interrumpe, solo se espera un poco mas antes de decidir
+  // que de verdad se detuvo.
+  var extensionesDictado = 0;
   var relojDictado     = null;
 
   function esMovil() {
@@ -833,21 +838,39 @@
       callarAnuncio();
     }
 
+    // Los trozos se hablan de a uno, nunca varios encolados de una vez.
+    //
+    // El estandar dice que dos speak() seguidos deberian sonar uno detras
+    // del otro sin ayuda. En la practica, varios motores de Android no
+    // encolan de verdad: un speak() mientras otra locucion esta sonando la
+    // corta a medias en vez de esperar su turno. De ahi el sintoma de "el
+    // bot habla y de repente se queda callado": el segundo trozo cortaba al
+    // primero antes de que terminara.
+    //
+    // Pidiendo el trozo siguiente solo cuando el anterior de verdad termino
+    // (su propio "onend"), nunca hay mas de una locucion viva a la vez, que
+    // es exactamente como sonaba la pagina antes de trocear nada.
     function encolar(vozAUsar) {
-      var i, u;
-      for (i = 0; i < trozos.length; i++) {
-        u = nuevaFrase(trozos[i], vozAUsar, idioma);
-        if (i === 0) { u.onstart = alArrancar; }
-        if (i === ultimo) {
+      var i = 0;
+      function siguiente() {
+        if (i >= trozos.length) { return; }
+        var idx = i;
+        var esUltimo = (idx === ultimo);
+        var u = nuevaFrase(trozos[idx], vozAUsar, idioma);
+        i++;
+        if (idx === 0) { u.onstart = alArrancar; }
+        if (esUltimo) {
           u.onend = finalizar;
           u.onerror = finalizar;
         } else {
-          // Un tropiezo a mitad de camino no cierra el paso: el trozo
-          // siguiente ya esta en la cola y sigue sonando por su cuenta.
-          u.onerror = function () {};
+          // Un tropiezo a mitad de camino no cierra el paso: se sigue con el
+          // trozo siguiente en vez de dejar el resto de la frase sin decir.
+          u.onend = siguiente;
+          u.onerror = siguiente;
         }
         TTS.speak(u);
       }
+      siguiente();
     }
 
     // Red de seguridad: en algunos Chrome "onend" no dispara si la pestana
@@ -910,16 +933,22 @@
     var voz = vozEspanol() || mejorVozVista;
     idiomaHablado = idiomaDeLaVoz(voz);
 
-    var pack = IDIOMAS[idiomaHablado] || IDIOMAS.es || {};
     var dicho = conArranqueDesechable(frase(idiomaHablado, clave, datos),
                                       idiomaHablado);
+
+    // Troceado por la misma razon que en decirEnVozAlta: alguna de las
+    // frases que pasan por aqui (la del toque, cuando incluye el aviso del
+    // microfono) puede llegar a durar quince segundos, justo el limite en el
+    // que Android deja de emitir si nadie lo empuja.
+    var trozos = partirEnTrozos(dicho);
+    var ultimo = trozos.length - 1;
 
     // El idioma se pide en la forma mas general que sirva. Con una voz
     // elegida se usa el suyo, que existe con seguridad. Sin ella se pide
     // "es" a secas y no "es-CO": el motor de un celular suele traer es-ES o
     // es-US, y pedirle un pais que no tiene es una forma de quedarse mudo.
-    function armar(conVoz) {
-      var f = new window.SpeechSynthesisUtterance(dicho);
+    function armar(conVoz, texto2) {
+      var f = new window.SpeechSynthesisUtterance(texto2);
       f.lang = (conVoz && conVoz.lang) ? conVoz.lang : idiomaHablado;
       f.rate = VELOCIDAD_VOZ;
       f.pitch = 1.02;
@@ -952,16 +981,36 @@
       callarAnuncio();
     }
 
-    var locucion = armar(voz);
-    locucion.onstart = alArrancar;
-    locucion.onend = finalizar;
-    locucion.onerror = finalizar;
+    // Habla los trozos desde el indice indicado, encadenados por "onend":
+    // nunca hay dos locuciones vivas a la vez. Solo se llama DESPUES de que
+    // el primer trozo ya demostro que el motor esta despierto, asi que estos
+    // ya no necesitan ningun cuidado de gesto.
+    function hablarDesde(vozAUsar, desde) {
+      var i = desde;
+      function siguiente() {
+        if (i > ultimo) { cerrar(); return; }
+        var idx = i;
+        var u = armar(vozAUsar, trozos[idx]);
+        i++;
+        if (idx === ultimo) { u.onend = cerrar; u.onerror = cerrar; }
+        else { u.onend = siguiente; u.onerror = siguiente; }
+        try { TTS.speak(u); } catch (e) { siguiente(); }
+      }
+      siguiente();
+    }
+
+    var primerTrozo = armar(voz, trozos[0]);
+    primerTrozo.onstart = alArrancar;
+    primerTrozo.onend = function () {
+      if (ultimo > 0) { hablarDesde(voz, 1); } else { finalizar(); }
+    };
+    primerTrozo.onerror = finalizar;
 
     // Red dura: si ni el intento ni el reintento dicen nada, el recorrido
     // sigue igual. Quedarse esperando en silencio seria peor que hablar mal.
     window.setTimeout(cerrar, tiempoDeLectura(texto) + 5000);
 
-    try { TTS.speak(locucion); } catch (e) { reintentado = true; finalizar(); }
+    try { TTS.speak(primerTrozo); } catch (e) { reintentado = true; finalizar(); }
 
     // Reintento. Esta es la locucion que desbloquea el motor de voz para toda
     // la sesion, asi que no basta con lanzarla: hay que comprobar que salio.
@@ -979,9 +1028,11 @@
       window.setTimeout(function () {
         if (arranco || listo || !TTS) { return; }
         try {
-          var otra = armar(null);
+          var otra = armar(null, trozos[0]);
           otra.onstart = alArrancar;
-          otra.onend = finalizar;
+          otra.onend = function () {
+            if (ultimo > 0) { hablarDesde(null, 1); } else { finalizar(); }
+          };
           otra.onerror = finalizar;
           TTS.speak(otra);
         } catch (e) { finalizar(); }
@@ -1398,9 +1449,16 @@
         p.then(function () {
           // Si para cuando resuelve ya estamos reproduciendo de verdad, no se
           // toca: pausar aqui cortaria la experiencia recien empezada.
+          //
+          // Solo se pausa, sin tocar la posicion. reproducir() ya la vuelve a
+          // poner en cero por su cuenta justo antes de reproducir de verdad,
+          // asi que hacerlo tambien aqui era superfluo. Y en Safari, mover la
+          // posicion de un audio que todavia esta terminando su propio
+          // arranque interno es una causa conocida de que la primera
+          // reproduccion se corte sola y la segunda si salga completa, que es
+          // justo lo reportado en iPhone.
           if (estado !== "REPRODUCIENDO") {
             audio.pause();
-            audio.currentTime = 0;
           }
         })["catch"](function () { /* bloqueado: se vera al reproducir */ });
       }
@@ -1459,8 +1517,9 @@
     // ya esta vacia y cancelar solo sirve para tragarse la locucion que viene
     // detras. Y si el usuario toca mientras suena, esto no se ejecuta: de eso
     // se encarga la salida de arriba.
+    var huboQueCancelar = false;
     if (TTS && bienvenidaLanzada && !bienvenidaTerminada) {
-      try { TTS.cancel(); } catch (e) { /* sin efecto */ }
+      try { TTS.cancel(); huboQueCancelar = true; } catch (e) { /* sin efecto */ }
     }
 
     despertarSalida();
@@ -1488,7 +1547,30 @@
     // ya expiro. Se resuelve arrancando y pausando el audio ahora mismo,
     // todavia dentro del gesto, con lo que el elemento queda desbloqueado.
     desbloquearAudio();
-    hablarDeInmediato("arranca", reproducir);
+
+    // Aviso del microfono: la bienvenida es la unica frase que lo explica, y
+    // si quedo bloqueada -el caso normal en un aparato que abre el sitio por
+    // primera vez- nadie lo oyo. Se agrega aqui para ese camino, que es el
+    // que de verdad ocurre casi siempre. Cuando la bienvenida SI se alcanzo
+    // a decir entera, este aviso ya se dio y no hace falta repetirlo: ese
+    // caso pasa por alTerminarBienvenida(), no por aqui.
+    var claveArranque = bienvenidaTerminada ? "arranca" : "arrancaConAviso";
+
+    // El mismo respiro que ya se le dio hoy a los otros dos sitios donde se
+    // cancela y se vuelve a hablar: cancel() no vacia la cola en el acto, y
+    // hablar en el mismo instante perdia la locucion. Como esta es la UNICA
+    // locucion de toda la sesion que corre dentro del gesto del usuario -la
+    // que desbloquea el motor de voz en iOS- perderla no apagaba solo esta
+    // frase: apagaba el bot entero el resto de la sesion. El respiro solo se
+    // mete cuando de verdad hubo algo que cancelar; si no hubo nada que
+    // cancelar, hablar sigue siendo instantaneo, como exige iOS.
+    if (huboQueCancelar) {
+      window.setTimeout(function () {
+        hablarDeInmediato(claveArranque, reproducir);
+      }, 120);
+    } else {
+      hablarDeInmediato(claveArranque, reproducir);
+    }
   }
 
   arranque.addEventListener("click", function (e) { e.preventDefault(); comenzar(); });
@@ -1630,6 +1712,7 @@
     // de digitos (clave "numeroFaltaron") NO lo reinicia, porque es
     // precisamente la que necesita que el contador seguna sumando.
     if (clave !== "numeroFaltaron") { intentosSinNumero = 0; }
+    extensionesDictado = 0;
 
     hablar(clave || "pedirNumero", function () {
       escuchar(oirNumero);
@@ -1664,7 +1747,11 @@
     if (digitos.length >= DIGITOS_CELULAR) { cerrarCaptura(); return; }
 
     // Todavia faltan numeros: se reinicia la cuenta de silencio y se sigue
-    // escuchando, sin decir nada.
+    // escuchando, sin decir nada. Llegar un digito nuevo prueba que el
+    // dictado sigue vivo, asi que tambien se reinicia el contador de
+    // extensiones: la tolerancia a pausas es por tramo, no acumulada para
+    // todo el dictado entero.
+    extensionesDictado = 0;
     esperarFinDelDictado();
   }
 
@@ -1681,7 +1768,24 @@
     // que hacer segun cuantos digitos haya, y de eso encargarse es su trabajo,
     // no el de este reloj.
     relojDictado = window.setTimeout(function () {
-      if (estado === "CAPTURA_NUMERO") { cerrarCaptura(); }
+      if (estado !== "CAPTURA_NUMERO") { return; }
+
+      // Ya hay algunos digitos, pero no los suficientes, y el usuario se
+      // quedo callado. Antes de hoy esto simplemente no hacia nada -tolerante
+      // con cualquier pausa, pero tambien con el silencio total-. Se corrigio
+      // para que SIEMPRE actuara, y esa correccion arreglo el silencio total
+      // pero de paso convirtio una pausa normal entre "315" y "888" en un
+      // intento fallido que borra lo ya dictado. Ahora, mientras haya digitos
+      // de por medio, se le da mas tiempo en silencio -hasta dos veces mas-
+      // antes de asumir que de verdad se detuvo.
+      if (digitos.length > 0 && digitos.length < MINIMO_DIGITOS &&
+          extensionesDictado < 2) {
+        extensionesDictado++;
+        esperarFinDelDictado();
+        return;
+      }
+      extensionesDictado = 0;
+      cerrarCaptura();
     }, PAUSA_FIN_DICTADO_MS);
   }
 
