@@ -130,6 +130,29 @@ justo después del asunto.
 
 7. Ahora sí, envíelo al profesor.
 
+### Por qué el diseño ya no se rompe al pegar
+
+Una versión anterior se veía perfecta en el navegador y llegaba destrozada a
+Outlook: subrayados azules por todas partes, la línea de separación convertida
+en un cuadro rosado y huecos enormes entre las líneas.
+
+La culpa no era de Outlook sino del HTML, que usaba tres cosas que ningún
+sanitizador de correo respeta: `display:block` dentro del enlace, una tabla
+anidada con márgenes para dibujar la línea, y el `text-decoration` puesto
+únicamente en la etiqueta `<a>`.
+
+El correo actual está escrito para sobrevivir a ese viaje:
+
+- Los saltos de línea son `<br />`, no bloques.
+- La línea de separación son tres rayas de texto. No hay sanitizador capaz de
+  deformar un carácter.
+- El `text-decoration:none` va repetido dentro de cada `<span>`, que es lo que
+  de verdad le gana al subrayado que Outlook impone.
+- El espaciado se consigue con `line-height`, nunca con márgenes.
+
+Si aun así ve algo raro, lo más probable es que haya pegado con
+`Ctrl + Shift + V`. Deshaga y repita con `Ctrl + V`.
+
 ### Si el botón se ve mal al pegar
 
 Deshaga con `Ctrl + Z` hasta que el cuerpo quede vacío, y repita desde el paso 2

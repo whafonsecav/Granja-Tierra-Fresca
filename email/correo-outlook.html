@@ -4,10 +4,6 @@
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Un mensaje para ti</title>
-
-<!-- Le dice al cliente de correo que la pieza sabe verse en claro y en
-     oscuro. Sin esto, Outlook y Apple Mail invierten los colores por su
-     cuenta y suelen ensuciar el boton. -->
 <meta name="color-scheme" content="light dark" />
 <meta name="supported-color-schemes" content="light dark" />
 
@@ -18,57 +14,70 @@
   Destinatario: docente universitario, ciego de nacimiento, usuario
   experto de lector de pantalla.
 
-  QUÉ ES ESTE CORREO: un botón. Literalmente nada más.
+  QUÉ ES ESTE CORREO: un bloque rojo con dos frases. Nada más.
+  Ni encabezado, ni párrafos, ni logo, ni firma, ni pie de página.
+  Un solo enlace en todo el mensaje.
 
-  Sin encabezado, sin párrafos, sin logo, sin firma, sin imágenes, sin
-  pie de página. Un solo enlace en todo el mensaje.
+  ------------------------------------------------------------------
+  ESCRITO PARA SOBREVIVIR AL COPIAR Y PEGAR
+  ------------------------------------------------------------------
+  Este correo no se envía desde un servidor: se abre en el navegador,
+  se copia y se pega en Outlook Web. Ese viaje pasa por dos filtros —el
+  portapapeles de Chrome y el sanitizador de Outlook— y ninguno de los
+  dos respeta el HTML tal cual.
 
-  POR QUÉ NO DICE DE QUÉ SE TRATA
+  Una versión anterior se veía perfecta en el navegador y llegaba rota
+  a Outlook: aparecían subrayados, la línea de separación se convertía
+  en un cuadro rosado y se abrían huecos enormes. Las tres causas, y
+  las tres reglas que salieron de ahí:
 
-  Ni "tomate", ni "granja", ni "cocina". Un correo que nombra el
-  producto en la primera frase se clasifica solo como publicidad antes
-  de que el destinatario termine de oírlo, y con un lector de pantalla
-  eso ocurre en dos segundos. Lo único que promete es lo que de verdad
-  se está ofreciendo: dos minutos grabados para él.
+  1. NADA de display:block dentro del enlace. Outlook lo descarta y el
+     texto se desmorona. Los saltos se hacen con <br />, que sí
+     sobrevive siempre.
 
-  DÓNDE ESTÁ EL GANCHO
+  2. NADA de tablas anidadas dentro del enlace, ni márgenes. La línea
+     de separación estaba hecha con una tabla de un píxel y márgenes
+     automáticos: al perder los márgenes se volvió un bloque sólido.
+     Ahora la línea son tres rayas de texto, que no hay sanitizador
+     capaz de deformar.
 
-  En el asunto y en el botón, que son las dos únicas cosas que existen:
+  3. El text-decoration va en el <a> Y en un <span> por dentro. Con
+     ponerlo solo en el enlace no basta: Outlook le vuelve a meter el
+     subrayado azul de los enlaces. El span de adentro es el que gana.
 
-      Asunto: Tenemos un mensaje especial para ti
-      Botón:  Grabamos dos minutos pensando en ti
+  Regla general que se sigue de esto: espaciado con celdas y atributos
+  height, nunca con margin ni padding sueltos; color y tipografía
+  repetidos en cada celda, porque Outlook no hereda; y ninguna
+  estructura más profunda de lo estrictamente necesario.
 
-  Las dos frases se responden entre sí, y ninguna revela nada.
+  ------------------------------------------------------------------
+  LO QUE NO SE VE, Y ES LO QUE GUÍA AL DESTINATARIO
+  ------------------------------------------------------------------
+  El atributo aria-label reemplaza el texto del enlace para el lector
+  de pantalla, y ahí va la instrucción completa: qué es, cuánto dura,
+  que se escucha en vez de leerse, y que se abre con Enter.
 
-  SOBRE LA LECTURA AUTOMÁTICA
+  Funciona en Outlook Web, Gmail y Apple Mail, que renderizan HTML de
+  verdad. Outlook de escritorio usa el motor de Word e ignora ARIA: por
+  eso el texto visible tiene que bastarse solo.
 
-  Ningún cliente de correo reproduce audio al abrirse: Outlook, Gmail y
-  Mail de iOS eliminan <audio>, <script> e <iframe> al recibir. Pero la
-  lectura automática SÍ ocurre, y no la dispara el correo: la dispara
-  el lector de pantalla que el destinatario ya tiene encendido, que le
-  narra remitente, asunto y vista previa mientras recorre su bandeja.
-
-  Como el correo no tiene más texto que el botón, la vista previa la
-  ocupa el texto del botón. Por eso las dos frases están escritas para
-  oírse seguidas, en ese orden.
+  No se escribe "Enlace" en el texto: el lector de pantalla ya anuncia
+  por su cuenta que lo es, y repetirlo suena a tartamudeo.
   ====================================================================
 -->
 
 <style type="text/css">
   body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
-  table { border-collapse: collapse !important; }
-  body  { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+  table { border-collapse: collapse; }
+  body  { margin: 0; padding: 0; width: 100%; }
 
-  /* Modo oscuro. El botón conserva su rojo en los dos modos: es el único
-     elemento de la pieza y tiene que verse igual de contundente. */
+  /* Refuerzo contra el subrayado que Outlook Web le impone a los enlaces.
+     Es solo un refuerzo: lo que de verdad lo evita son los estilos en línea,
+     porque este bloque <style> no siempre sobrevive al pegado. */
+  a, a:link, a:visited, a:hover { text-decoration: none; }
+
   @media (prefers-color-scheme: dark) {
-    .fondo  { background-color: #1b1b1b !important; }
-  }
-
-  @media screen and (max-width: 620px) {
-    .contenedor { width: 100% !important; }
-    .relleno    { padding-left: 18px !important; padding-right: 18px !important; }
-    .boton      { font-size: 20px !important; padding: 26px 20px !important; }
+    .fondo { background-color: #1b1b1b !important; }
   }
 </style>
 </head>
@@ -76,10 +85,10 @@
 <body class="fondo" style="margin:0; padding:0; background-color:#ffffff;">
 
 <!--
-  Vista previa oculta. Solo sobrevive si el correo se envía desde Outlook
-  de escritorio; en Outlook Web se pierde al copiar y pegar, y entonces la
-  vista previa pasa a ser el texto del botón. Dice lo mismo a propósito,
-  para que el resultado sea idéntico por los dos caminos.
+  Vista previa oculta. Solo sobrevive si el correo se envía desde Outlook de
+  escritorio; en Outlook Web se pierde al copiar y pegar, y entonces la vista
+  previa pasa a ser el texto del bloque. Dice lo mismo a propósito, para que
+  el resultado sea idéntico por los dos caminos.
 -->
 <div style="display:none; font-size:1px; color:#ffffff; line-height:1px; max-height:0px; max-width:0px; opacity:0; overflow:hidden;">
   Grabamos dos minutos pensando en ti.
@@ -88,78 +97,19 @@
 
 <table role="presentation" class="fondo" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#ffffff;">
   <tr>
-    <td align="center" style="padding:56px 14px;">
+    <td align="center" style="padding:48px 12px;">
 
-      <table role="presentation" class="contenedor" width="560" cellpadding="0" cellspacing="0" border="0" style="width:560px; max-width:560px;">
+      <!-- El bloque rojo. Una sola tabla, una sola celda, un solo enlace. -->
+      <table role="presentation" width="520" cellpadding="0" cellspacing="0" border="0" style="width:520px; max-width:520px;">
         <tr>
-          <td class="relleno" align="center" style="padding:0 30px;">
+          <td bgcolor="#a81f18" align="center"
+              style="background-color:#a81f18; border-radius:10px; padding:44px 36px 40px 36px; font-family:Georgia,'Times New Roman',serif; font-size:27px; line-height:38px; color:#ffffff;">
 
-            <!--
-              EL BLOQUE. Un enlace real dentro de una celda con color de
-              fondo: no es imagen y no es VML. Se ve en Outlook, se alcanza
-              con Tab, y el lector de pantalla lo anuncia como enlace.
-
-              Sobre el diseño, que aquí no es decoración gratuita: la pieza
-              tiene un solo elemento, así que ese elemento carga con toda la
-              credibilidad de la marca. Un rectángulo plano con una frase
-              dentro parece un correo improvisado; con jerarquía tipográfica,
-              aire y una línea que separe, parece una marca que existe.
-
-              Tres decisiones concretas:
-
-                - Rojo #a81f18, más profundo que un rojo puro. Los rojos
-                  saturados leen como alerta o descuento; este lee como
-                  tomate maduro.
-                - Dos niveles de texto separados por una línea fina: la
-                  promesa arriba, en serif y grande; la instrucción abajo, en
-                  versalitas espaciadas. Es la estructura de una tarjeta, no
-                  la de un botón.
-                - Mucho aire alrededor. El espacio vacío es lo que separa una
-                  pieza cuidada de una hecha con afán.
-
-              Que el destinatario no vea nada de esto no lo hace inútil: el
-              correo también lo revisan colegas y evaluadores que sí ven, y la
-              marca tiene que sostenerse ante ellos.
-
-              El texto visible en versalitas no afecta a la lectura en voz
-              alta, porque el aria-label reemplaza por completo el nombre
-              accesible del enlace.
-            -->
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-                   style="border-collapse:separate;">
-              <tr>
-                <td bgcolor="#a81f18" align="center"
-                    style="background-color:#a81f18; border-radius:10px; padding:0;">
-
-                  <a class="boton"
-                     href="https://whafonsecav.github.io/Granja-Tierra-Fresca/"
-                     lang="es-CO"
-                     aria-label="Grabamos dos minutos pensando en ti. Ábrelo para escucharlo: es un mensaje sonoro, dura dos minutos y no hay nada que leer. Presiona Enter para abrirlo."
-                     title="Ábrelo para escucharlo. Dura dos minutos."
-                     style="display:block; padding:46px 38px 42px 38px; color:#ffffff; text-decoration:none;">
-
-                    <span style="display:block; font-family:Georgia,'Times New Roman',serif; font-size:27px; line-height:38px; color:#ffffff;">
-                      Grabamos dos&nbsp;minutos<br />pensando en&nbsp;ti
-                    </span>
-
-                    <!-- Línea fina de separación. Se hace con una celda de
-                         1 píxel de alto porque los bordes CSS los ignora
-                         Outlook de escritorio, pero el bgcolor de una celda
-                         lo respeta siempre. -->
-                    <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" style="margin:26px auto 22px auto;">
-                      <tr>
-                        <td bgcolor="#d98a84" height="1" width="56" style="background-color:#d98a84; height:1px; width:56px; line-height:1px; font-size:1px;">&nbsp;</td>
-                      </tr>
-                    </table>
-
-                    <span style="display:block; font-family:Arial,Helvetica,sans-serif; font-size:13px; line-height:20px; letter-spacing:2.5px; text-transform:uppercase; color:#f3c4c0;">
-                      Ábrelo aquí para escucharlo
-                    </span>
-
-                  </a>
-                </td>
-              </tr>
-            </table>
+            <a href="https://whafonsecav.github.io/Granja-Tierra-Fresca/"
+               lang="es-CO"
+               aria-label="Grabamos dos minutos pensando en ti. Ábrelo para escucharlo: es un mensaje sonoro, dura dos minutos y no hay nada que leer. Presiona Enter para abrirlo."
+               title="Ábrelo para escucharlo. Dura dos minutos."
+               style="color:#ffffff; text-decoration:none;"><span style="font-family:Georgia,'Times New Roman',serif; font-size:27px; line-height:38px; color:#ffffff; text-decoration:none;">Grabamos dos minutos<br />pensando en ti</span><br /><span style="font-family:Georgia,'Times New Roman',serif; font-size:15px; line-height:64px; color:#d98a84; text-decoration:none; letter-spacing:1px;">&#8212;&#8212;&#8212;</span><br /><span style="font-family:Arial,Helvetica,sans-serif; font-size:13px; line-height:30px; letter-spacing:2.5px; color:#f3c4c0; text-decoration:none;">&Aacute;BRELO AQU&Iacute; PARA ESCUCHARLO</span></a>
 
           </td>
         </tr>
