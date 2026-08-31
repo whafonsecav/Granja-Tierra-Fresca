@@ -456,6 +456,28 @@
     if (latido) { window.clearInterval(latido); latido = null; }
   }
 
+  // Comprueba a mano si el motor esta hablando.
+  //
+  // Hace falta porque no todos disparan "onstart". Edge en Android, por
+  // ejemplo, reproduce la locucion perfectamente y nunca avisa que empezo.
+  // Como la pagina se fiaba solo de ese evento, creia que la bienvenida no
+  // habia sonado y la repetia al tocar la pantalla; y ese rodeo hacia expirar
+  // el permiso del gesto, con lo cual el audio ya no arrancaba y hacia falta
+  // un segundo toque. Un solo evento que no llega, tres sintomas.
+  function vigilarSiSuena() {
+    if (!TTS || algunaVozSono) { return; }
+    var vigilante = window.setInterval(function () {
+      if (!TTS || algunaVozSono) { window.clearInterval(vigilante); return; }
+      if (TTS.speaking) {
+        algunaVozSono = true;
+        window.clearInterval(vigilante);
+      }
+    }, 150);
+    // Si a los cuatro segundos no ha sonado nada, es que el navegador lo
+    // bloqueo de verdad. Se deja de mirar.
+    window.setTimeout(function () { window.clearInterval(vigilante); }, 4000);
+  }
+
   function nuevaFrase(texto, voz, idioma) {
     var pack = IDIOMAS[idioma || "es"] || IDIOMAS.es || {};
     var f = new window.SpeechSynthesisUtterance(texto);
@@ -545,6 +567,7 @@
 
     iniciarLatido();
     try { TTS.speak(locucion); } catch (e) { finalizar(); }
+    vigilarSiSuena();
   }
 
 
@@ -600,6 +623,7 @@
     window.setTimeout(finalizar, tiempoDeLectura(texto) + 5000);
 
     try { TTS.speak(locucion); } catch (e) { finalizar(); }
+    vigilarSiSuena();
   }
 
 
@@ -877,7 +901,15 @@
     if (typeof window.fetch !== "function" || !window.URL || !URL.createObjectURL) {
       return;
     }
-    window.fetch(enlacePdf.getAttribute("href"), { cache: "force-cache" })
+    // "no-cache" obliga a preguntarle al servidor si hay una version mas
+    // nueva. Aqui estaba "force-cache", que hace lo contrario: usar la copia
+    // guardada sin comprobar nada. El resultado fue que a quien ya hubiera
+    // abierto la pagina antes se le descargaba el PDF viejo para siempre,
+    // en cualquier navegador y en cualquier aparato.
+    //
+    // No implica volver a bajarlo cada vez: si el archivo no cambio, el
+    // servidor responde 304 y se reutiliza el que ya estaba.
+    window.fetch(enlacePdf.getAttribute("href"), { cache: "no-cache" })
       .then(function (r) {
         if (!r.ok) { throw new Error("HTTP " + r.status); }
         return r.blob();
@@ -1026,10 +1058,14 @@
     var p = audio.play();
     if (p && typeof p["catch"] === "function") {
       p["catch"](function () {
-        // El gesto no basto o se perdio: se vuelve a pedir.
+        // El gesto no basto o se perdio. Se vuelve a pedir, pero con una
+        // frase corta: repetir la bienvenida entera, que es lo que se hacia
+        // antes, sonaba a que la pagina se hubiera reiniciado sola.
         yaArranco = false;
         estado = "ESPERA_GESTO";
-        prepararArranque();
+        arranque.setAttribute("aria-label", frase("es", "tocaOtraVez"));
+        arranque.focus();
+        hablar("tocaOtraVez");
       });
     }
   }

@@ -53,6 +53,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
 
     bienvenida: "Tenemos un mensaje especial para ti. {gesto} para escucharlo. {aviso}",
     puente: "Tenemos un mensaje especial para ti. {aviso} Aquí va.",
+    tocaOtraVez: "{gesto} otra vez, por favor.",
 
     soloTeclado: "No puedo usar el micrófono, así que vamos por el teclado. " +
                  "Presiona la tecla ese para decir sí, y la tecla ene para " +
@@ -112,6 +113,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
 
     bienvenida: "We have a special message for you. {gesto} to hear it. {aviso}",
     puente: "We have a special message for you. {aviso} Here it goes.",
+    tocaOtraVez: "{gesto} again, please.",
 
     soloTeclado: "I can't use the microphone, so let's go with the keyboard. " +
                  "Press the S key for yes, and the N key for no. When I ask " +
@@ -168,6 +170,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
 
     bienvenida: "Temos uma mensagem especial para você. {gesto} para ouvir. {aviso}",
     puente: "Temos uma mensagem especial para você. {aviso} Lá vai.",
+    tocaOtraVez: "{gesto} de novo, por favor.",
 
     soloTeclado: "Não consigo usar o microfone, então vamos pelo teclado. " +
                  "Aperte a tecla S para sim, e a tecla N para não. Quando eu " +
@@ -226,6 +229,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
 
     bienvenida: "Abbiamo un messaggio speciale per te. {gesto} per ascoltarlo. {aviso}",
     puente: "Abbiamo un messaggio speciale per te. {aviso} Eccolo.",
+    tocaOtraVez: "{gesto} di nuovo, per favore.",
 
     soloTeclado: "Non riesco a usare il microfono, quindi andiamo con la " +
                  "tastiera. Premi il tasto S per sì, e il tasto N per no. " +
@@ -282,6 +286,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
 
     bienvenida: "Nous avons un message spécial pour toi. {gesto} pour l'écouter. {aviso}",
     puente: "Nous avons un message spécial pour toi. {aviso} Le voici.",
+    tocaOtraVez: "{gesto} encore une fois, s'il te plaît.",
 
     soloTeclado: "Je ne peux pas utiliser le micro, alors passons au clavier. " +
                  "Appuie sur la touche S pour oui, et sur la touche N pour non. " +
