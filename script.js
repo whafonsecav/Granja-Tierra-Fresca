@@ -162,6 +162,11 @@
   var estado           = "ESPERA_GESTO";
   var digitos          = [];
   var reintentos       = 0;
+  // Contador propio del numero, separado de "reintentos". pedirNumero()
+  // reinicia "reintentos" cada vez que se llama a si misma para repreguntar,
+  // y si el conteo de fallos viviera en esa misma variable se borraria solo
+  // en cada vuelta: nunca llegaria a tres. Este cuenta aparte y sobrevive.
+  var intentosSinNumero = 0;
   var relojDictado     = null;
 
   function esMovil() {
@@ -681,6 +686,35 @@
   // Ya no hace falta deducir nada, porque ahora en el toque se habla SIEMPRE.
   // Ver comenzar().
 
+  // Parte un texto en frases de hasta ~130 caracteres. Ver la nota de por
+  // que en decirEnVozAlta: es lo que evita el corte a los quince segundos
+  // de Android sin depender de pause()/resume(), que en movil esta roto.
+  function partirEnTrozos(texto) {
+    var LARGO = 130;
+    var partes = texto.match(/[^.!?\u2026]+[.!?\u2026]*\s*/g) || [texto];
+    var trozos = [];
+    var i, p, palabras, actual, j;
+    for (i = 0; i < partes.length; i++) {
+      p = partes[i].replace(/^\s+|\s+$/g, "");
+      if (!p) { continue; }
+      if (p.length <= LARGO) { trozos.push(p); continue; }
+      // Una frase sola ya mas larga que el limite: se corta por palabras,
+      // sin partir ninguna a la mitad.
+      palabras = p.split(/\s+/);
+      actual = "";
+      for (j = 0; j < palabras.length; j++) {
+        if (actual && (actual + " " + palabras[j]).length > LARGO) {
+          trozos.push(actual);
+          actual = palabras[j];
+        } else {
+          actual = actual ? actual + " " + palabras[j] : palabras[j];
+        }
+      }
+      if (actual) { trozos.push(actual); }
+    }
+    return trozos.length ? trozos : [texto];
+  }
+
   function nuevaFrase(texto, voz, idioma) {
     var pack = IDIOMAS[idioma || "es"] || IDIOMAS.es || {};
     var f = new window.SpeechSynthesisUtterance(texto);
@@ -762,10 +796,25 @@
   }
 
   function decirEnVozAlta(texto, voz, seguir, idioma) {
-    // La variable NO se llama "frase": ese nombre lo ocupa la funcion que
-    // resuelve los textos por idioma, y sombrearla aqui dentro seria pedir
-    // un error a gritos.
-    var locucion = nuevaFrase(texto, voz, idioma);
+    // Se habla en trozos cortos, encolados de una vez, y no en una sola
+    // locucion larga.
+    //
+    // Chrome en Android deja de emitir a los quince segundos si nadie lo
+    // empuja. Ese empujon normalmente es un pause()/resume() periodico,
+    // pero en movil ese mismo pause() rompe la voz en vez de mantenerla
+    // viva (ver la nota de iniciarLatido), asi que ahi esta apagado. Sin
+    // otra defensa, la bienvenida -la frase mas larga de la pagina- se
+    // cortaba a mitad de camino y se quedaba en silencio el resto de la
+    // sesion.
+    //
+    // Ninguna frase de la pieza dura sola quince segundos. Troceada por
+    // oraciones, cada trozo termina bien antes del limite, y el corte no
+    // tiene ocasion de producirse. El motor de voz reproduce los trozos
+    // encolados uno detras de otro sin que haya que esperar el "onend" de
+    // cada uno para pedir el siguiente: encolarlos todos de entrada es lo
+    // que evita el hueco entre ellos.
+    var trozos = partirEnTrozos(texto);
+    var ultimo = trozos.length - 1;
 
     var listo = false;
     function finalizar() {
@@ -778,19 +827,35 @@
     }
 
     var arranco = false;
-    locucion.onstart = function () {
+    function alArrancar() {
       arranco = true;
       algunaVozSono = true;
       callarAnuncio();
-    };
-    locucion.onend = finalizar;
-    locucion.onerror = finalizar;
+    }
+
+    function encolar(vozAUsar) {
+      var i, u;
+      for (i = 0; i < trozos.length; i++) {
+        u = nuevaFrase(trozos[i], vozAUsar, idioma);
+        if (i === 0) { u.onstart = alArrancar; }
+        if (i === ultimo) {
+          u.onend = finalizar;
+          u.onerror = finalizar;
+        } else {
+          // Un tropiezo a mitad de camino no cierra el paso: el trozo
+          // siguiente ya esta en la cola y sigue sonando por su cuenta.
+          u.onerror = function () {};
+        }
+        TTS.speak(u);
+      }
+    }
+
     // Red de seguridad: en algunos Chrome "onend" no dispara si la pestana
     // pierde el foco. Sin esto el flujo quedaria colgado para siempre.
     window.setTimeout(finalizar, tiempoDeLectura(texto) + 6000);
 
     iniciarLatido();
-    try { TTS.speak(locucion); } catch (e) { finalizar(); }
+    try { encolar(voz); } catch (e) { finalizar(); }
 
     // Si a los dos segundos y medio no ha empezado a sonar, se reintenta una
     // vez con una voz instalada en el aparato.
@@ -809,17 +874,7 @@
       try { TTS.cancel(); } catch (e) { /* sin efecto */ }
       window.setTimeout(function () {
         if (arranco || listo || !TTS) { return; }
-        try {
-          var reintento = nuevaFrase(texto, local, idioma);
-          reintento.onstart = function () {
-            arranco = true;
-            algunaVozSono = true;
-            callarAnuncio();
-          };
-          reintento.onend = finalizar;
-          reintento.onerror = finalizar;
-          TTS.speak(reintento);
-        } catch (e) { /* se deja como estaba */ }
+        try { encolar(local); } catch (e) { finalizar(); }
       }, 150);
     }, 2500);
   }
@@ -1570,6 +1625,11 @@
     estado = "CAPTURA_NUMERO";
     digitos = [];
     reintentos = 0;
+    // Solo se reinicia el contador de fallos en una entrada de verdad: la
+    // primera vez, o cuando el usuario pidio borrar. La repregunta por falta
+    // de digitos (clave "numeroFaltaron") NO lo reinicia, porque es
+    // precisamente la que necesita que el contador seguna sumando.
+    if (clave !== "numeroFaltaron") { intentosSinNumero = 0; }
 
     hablar(clave || "pedirNumero", function () {
       escuchar(oirNumero);
@@ -1613,10 +1673,15 @@
   // tener que anunciar que uno acabo.
   function esperarFinDelDictado() {
     window.clearTimeout(relojDictado);
+    // Antes solo se cerraba el dictado si YA habia numeros suficientes. Si
+    // el usuario decia cualquier cosa sin digitos ("hola, hola"), la cuenta
+    // de silencio se cumplia y no pasaba nada: ni se repetia la pregunta, ni
+    // se avisaba nada, y el microfono quedaba abierto para siempre. Ahora el
+    // reloj SIEMPRE cierra el dictado al cumplirse; cerrarCaptura() ya sabe
+    // que hacer segun cuantos digitos haya, y de eso encargarse es su trabajo,
+    // no el de este reloj.
     relojDictado = window.setTimeout(function () {
-      if (estado === "CAPTURA_NUMERO" && digitos.length >= MINIMO_DIGITOS) {
-        cerrarCaptura();
-      }
+      if (estado === "CAPTURA_NUMERO") { cerrarCaptura(); }
     }, PAUSA_FIN_DICTADO_MS);
   }
 
@@ -1629,9 +1694,18 @@
     window.clearTimeout(relojDictado);
     detenerMicrofono();
     if (digitos.length < MINIMO_DIGITOS) {
+      // Tres vueltas sin numero valido -incluido no decir nada- y se deja de
+      // insistir: se sigue con la conversacion en vez de quedarse atascado.
+      intentosSinNumero++;
+      if (intentosSinNumero >= 3) {
+        intentosSinNumero = 0;
+        hablar("numeroImposible", despedirse);
+        return;
+      }
       pedirNumero("numeroFaltaron");
       return;
     }
+    intentosSinNumero = 0;
     confirmarNumero();
   }
 

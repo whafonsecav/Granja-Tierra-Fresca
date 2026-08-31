@@ -44,7 +44,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
   es: {
     lang: "es-CO",
     saludo: "Hola.",
-    conectores: ["Bien.", "Listo.", "Ahora.", "A ver."],
+    conectores: ["Bien.", "Listo.", "Ahora.", "Entonces."],
 
     gestoMovil: "toca la pantalla",
     gestoEscritorio: "oprime cualquier tecla",
@@ -78,6 +78,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
     numeroBorrado: "Ya lo borré. Dime tu número de celular completo otra vez, por favor.",
     numeroFaltaron: "Me faltaron números. Dime tu número de celular completo " +
                     "otra vez, por favor.",
+    numeroImposible: "No logré entender tu número, y la culpa es mía, no tuya. Lo dejamos así por ahora.",
 
     confirmar: "El número que entendí es: {numero}. Si quedó bien, di: correcto. Si quedó mal, di: corregir. Y si quieres oírlo otra vez, di: volver a escuchar.",
     repetirNumero: "{numero}. ¿Quedó bien? Di: correcto, corregir, o volver a escuchar.",
@@ -93,7 +94,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
                  "solo párrafo, de diez líneas, escrito para que tu lector de " +
                  "pantalla te lo lea de corrido. Responde sí, o no.",
     cierreNumeroYPdf: "Cuando termine de hablar, la propuesta se descargará sola en tu equipo. Gracias por escucharnos hasta el final. Hasta muy pronto.",
-    cierreNumeroSinPdf: "Sin problema, te la dejo así. Gracias por escucharnos hasta el final. Hasta muy pronto.",
+    cierreNumeroSinPdf: "Sin problema. Gracias por escucharnos hasta el final. Hasta muy pronto.",
     cierrePdfSinNumero: "Gracias por regalarnos tu tiempo. Cuando termine de hablar, la propuesta se descargará sola en tu equipo, para cuando quieras oírla con calma. Hasta pronto.",
     cierreSinNada: "Gracias por regalarnos tu tiempo y tu atención. Aquí quedamos, por si algún día quieres volver. Hasta pronto.",
     numeroGuardado: "Tu número quedó guardado. Uno de nuestros aliados se va a comunicar contigo para coordinar tu envío.",
@@ -141,6 +142,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
     numeroBorrado: "I deleted it. Tell me your full phone number again, please.",
     numeroFaltaron: "I'm missing some digits. Tell me your full phone number " +
                     "again, please.",
+    numeroImposible: "I couldn't make out your number, and that's on me, not you. We'll leave it for now.",
 
     confirmar: "The number I got is: {numero}. If it is right, say: correct. If it is wrong, say: fix it. And if you want to hear it again, say: repeat.",
     repetirNumero: "{numero}. Is it right? Say: correct, fix it, or repeat.",
@@ -156,7 +158,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
                  "It's a single paragraph, ten lines, written so your screen " +
                  "reader can read it straight through. Answer yes, or no.",
     cierreNumeroYPdf: "When I finish speaking, the proposal will download on its own. Thank you for listening all the way through. See you very soon.",
-    cierreNumeroSinPdf: "No problem, I will leave it. Thank you for listening all the way through. See you very soon.",
+    cierreNumeroSinPdf: "No problem at all. Thank you for listening all the way through. See you very soon.",
     cierrePdfSinNumero: "Thank you for giving us your time. When I finish speaking, the proposal will download on its own, for whenever you want to hear it calmly. See you soon.",
     cierreSinNada: "Thank you for giving us your time and your attention. We are here, in case you ever want to come back. See you soon.",
     numeroGuardado: "Your number is saved. One of our partners will get in touch with you to arrange your delivery.",
@@ -205,6 +207,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
                    "por favor.",
     numeroFaltaron: "Faltaram números. Me diga seu número de celular completo " +
                     "outra vez, por favor.",
+    numeroImposible: "Não consegui entender o seu número, e a culpa é minha, não sua. Vamos deixar assim por enquanto.",
 
     confirmar: "O número que entendi é: {numero}. Se ficou certo, diga: correto. Se ficou errado, diga: corrigir. E se quiser ouvir de novo, diga: repetir.",
     repetirNumero: "{numero}. Ficou certo? Diga: correto, corrigir, ou repetir.",
@@ -220,7 +223,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
                  "só, de dez linhas, escrito para o seu leitor de tela ler de " +
                  "uma vez. Responda sim, ou não.",
     cierreNumeroYPdf: "Quando eu terminar de falar, a proposta será baixada sozinha. Obrigado por ouvir até o final. Até muito breve.",
-    cierreNumeroSinPdf: "Sem problema, deixo assim. Obrigado por ouvir até o final. Até muito breve.",
+    cierreNumeroSinPdf: "Sem problema nenhum. Obrigado por ouvir até o final. Até muito breve.",
     cierrePdfSinNumero: "Obrigado por nos dar o seu tempo. Quando eu terminar de falar, a proposta será baixada sozinha, para quando quiser ouvir com calma. Até logo.",
     cierreSinNada: "Obrigado por nos dar o seu tempo e a sua atenção. Ficamos por aqui, caso um dia queira voltar. Até logo.",
     numeroGuardado: "O seu número ficou guardado. Um dos nossos parceiros vai entrar em contato para combinar o envio.",
@@ -268,6 +271,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
                    "intero, per favore.",
     numeroFaltaron: "Mi mancano delle cifre. Dimmi di nuovo il tuo numero di " +
                     "cellulare per intero, per favore.",
+    numeroImposible: "Non sono riuscito a capire il tuo numero, ed è colpa mia, non tua. Lo lasciamo così per ora.",
 
     confirmar: "Il numero che ho capito è: {numero}. Se è giusto, di': corretto. Se è sbagliato, di': correggere. E se vuoi risentirlo, di': ripetere.",
     repetirNumero: "{numero}. È giusto? Di': corretto, correggere, o ripetere.",
@@ -283,7 +287,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
                  "paragrafo, di dieci righe, scritto perché il tuo lettore di " +
                  "schermo lo legga tutto di seguito. Rispondi sì, o no.",
     cierreNumeroYPdf: "Quando finisco di parlare, la proposta si scaricherà da sola. Grazie per averci ascoltato fino in fondo. A prestissimo.",
-    cierreNumeroSinPdf: "Nessun problema, la lascio così. Grazie per averci ascoltato fino in fondo. A prestissimo.",
+    cierreNumeroSinPdf: "Nessun problema. Grazie per averci ascoltato fino in fondo. A prestissimo.",
     cierrePdfSinNumero: "Grazie per averci dato il tuo tempo. Quando finisco di parlare, la proposta si scaricherà da sola, per quando vorrai ascoltarla con calma. A presto.",
     cierreSinNada: "Grazie per averci dato il tuo tempo e la tua attenzione. Restiamo qui, se un giorno vorrai tornare. A presto.",
     numeroGuardado: "Il tuo numero è salvato. Uno dei nostri partner ti contatterà per organizzare la consegna.",
@@ -332,6 +336,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
                    "fois, s'il te plaît.",
     numeroFaltaron: "Il me manque des chiffres. Dis-moi ton numéro de portable " +
                     "en entier encore une fois, s'il te plaît.",
+    numeroImposible: "Je n'ai pas réussi à comprendre ton numéro, et c'est ma faute, pas la tienne. On laisse ça pour le moment.",
 
     confirmar: "Le numéro que j'ai compris est : {numero}. S'il est bon, dis : correct. S'il est faux, dis : corriger. Et si tu veux l'entendre encore, dis : répéter.",
     repetirNumero: "{numero}. C'est bon ? Dis : correct, corriger, ou répéter.",
@@ -347,7 +352,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
                  "C'est un seul paragraphe, de dix lignes, écrit pour que ton " +
                  "lecteur d'écran le lise d'un trait. Réponds oui, ou non.",
     cierreNumeroYPdf: "Quand j'aurai fini de parler, la proposition se téléchargera toute seule. Merci de nous avoir écoutés jusqu'au bout. À très bientôt.",
-    cierreNumeroSinPdf: "Pas de souci, je te la laisse. Merci de nous avoir écoutés jusqu'au bout. À très bientôt.",
+    cierreNumeroSinPdf: "Pas de souci du tout. Merci de nous avoir écoutés jusqu'au bout. À très bientôt.",
     cierrePdfSinNumero: "Merci de nous avoir donné ton temps. Quand j'aurai fini de parler, la proposition se téléchargera toute seule, pour quand tu voudras l'écouter tranquillement. À bientôt.",
     cierreSinNada: "Merci de nous avoir donné ton temps et ton attention. Nous restons là, si un jour tu veux revenir. À bientôt.",
     numeroGuardado: "Ton numéro est enregistré. Un de nos partenaires te contactera pour organiser ta livraison.",
