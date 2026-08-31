@@ -122,6 +122,18 @@
   // deja que el lector de pantalla haga el trabajo.
   var ESPERA_ANUNCIO = SILENCIO_INICIAL_MS + 1500;
 
+  // Cuanto espera la primera frase antes de sonar.
+  //
+  // Un lector de pantalla, al abrir la pagina, anuncia por su cuenta el
+  // titulo y el elemento enfocado, y eso le toma un par de segundos. Si la
+  // voz de la pagina arranca en medio, se oyen las dos encimadas. Se le cede
+  // el turno: la voz espera a que el lector termine su presentacion.
+  //
+  // A quien no use lector de pantalla esto le cuesta unos segundos de
+  // silencio al abrir, que es un precio pequeno comparado con dos voces
+  // hablando a la vez.
+  var ESPERA_PRIMERA_FRASE = 3200;
+
   var DIGITOS_CELULAR = 10;   // Colombia: 10 digitos
   var MINIMO_DIGITOS  = 7;
 
@@ -606,6 +618,8 @@
   // arranque, dice el texto en espanol y solo entonces ejecuta "despues". Es
   // el punto por el que pasa casi toda la voz de la pagina, para que las
   // reglas 1 y 2 del encabezado no dependan de acordarse de aplicarlas.
+  var ultimaVezQueHablo = 0;
+
   function hablar(clave, despues, datos) {
     detenerMicrofono();
 
@@ -646,12 +660,19 @@
       idiomaHablado = idiomaDeLaVoz(voz);
       var dicho = frase(idiomaHablado, clave, datos);
 
-      // El silencio de WebAudio esta sonando durante esta espera. Cuando entra
-      // la voz, el dispositivo ya esta abierto.
+      // El silencio de arranque solo hace falta cuando el dispositivo lleva
+      // rato callado. Entre dos frases seguidas de la misma conversacion el
+      // canal sigue abierto, y esperar otro segundo entero se siente como si
+      // la pagina se hubiera quedado pensando. Eso era lo que hacia que la
+      // pregunta del PDF tardara tanto en llegar despues del numero.
+      var seguido = (new Date()).getTime() - ultimaVezQueHablo < 5000;
+      var espera = seguido ? 200 : SILENCIO_INICIAL_MS;
+
       window.setTimeout(function () {
+        ultimaVezQueHablo = (new Date()).getTime();
         decirEnVozAlta(conArranqueDesechable(dicho, idiomaHablado),
                        voz, seguir, idiomaHablado);
-      }, SILENCIO_INICIAL_MS);
+      }, espera);
     });
   }
 
@@ -873,7 +894,19 @@
   // bastaba para que la peticion cayera al sino y terminara guardando el
   // numero. Con la raiz quedan cubiertas repita, repitelo, repitamelo,
   // repiteme, repetir y las demas sin tener que preverlas una por una.
-  var PATRON_REPETIR = /\b(repit\w*|repet\w*|ripet\w*|repeat|again|de novo|encore|ancora|vuelv\w* a (decir|leer)|otra vez|de nuevo|nuevamente|no escuche|no oi|no entendi|que dijo|como dijo)\b/;
+  // Al confirmar el numero ya no se responde si o no, sino con el verbo de lo
+  // que se quiere hacer. "Si" y "no" eran ambiguos justo donde mas caro sale
+  // equivocarse: si a "el numero es 3, 1, 5..." se contesta "no", no queda
+  // claro si se niega el numero o se niega la pregunta.
+  //
+  // Se siguen aceptando si y no como respaldo, porque mucha gente los va a
+  // decir por costumbre, pero el orden de evaluacion protege: primero volver
+  // a escuchar, que no cambia nada; despues corregir, que borra; y de ultimo
+  // correcto, que es lo unico irreversible.
+  var PATRON_CORRECTO = /\b(correcto|correcta|corretto|correct|exacto|exacta|exact|esta bien|asi es|quedo bien|perfecto|si|yes|sim|oui|certo|giusto|bon)\b/;
+  var PATRON_CORREGIR = /\b(corregir|corrijalo|corrigelo|corrige|corriger|correggere|corrigir|cambiar|cambialo|mal|esta mal|quedo mal|incorrecto|incorrect|equivocado|errado|sbagliato|faux|wrong|fix|no)\b/;
+
+  var PATRON_REPETIR = /\b(repit\w*|repet\w*|ripet\w*|repeat|again|encore|ancora|de novo|volver a (escuchar|oir|decir|leer)|volverlo a (escuchar|oir)|vuelv\w* a (escuchar|oir|decir|leer)|otra vez|de nuevo|nuevamente|no escuche|no oi|no entendi|que dijo|como dijo)\b/;
   var PATRON_LISTO  = /\b(listo|ya|termine|termina|es todo|nada mas|ya esta|fin)\b/;
 
   // Lee los digitos de a uno, con una pausa mas larga cada tres. De corrido,
@@ -1006,14 +1039,20 @@
 
     if (estado === "PREGUNTA_REPETIR" || estado === "PREGUNTA_CONTACTO" ||
         estado === "CONFIRMA_NUMERO" || estado === "PREGUNTA_PDF") {
+      // En la confirmacion las teclas siguen a los verbos: ce de correcto, e
+      // de corregir, erre de volver a escuchar. En las demas preguntas, que
+      // si son de si o no, se mantienen ese y ene.
+      if (estado === "CONFIRMA_NUMERO") {
+        if (/^[cC]$/.test(k)) { e.preventDefault(); resolverConfirmacion("correcto"); }
+        else if (/^[eE]$/.test(k)) { e.preventDefault(); resolverConfirmacion("corregir"); }
+        else if (/^[rR]$/.test(k)) { e.preventDefault(); repetirNumero(); }
+        else if (/^[sS]$/.test(k)) { e.preventDefault(); resolverConfirmacion("correcto"); }
+        else if (/^[nN]$/.test(k)) { e.preventDefault(); resolverConfirmacion("corregir"); }
+        return;
+      }
+
       if (/^[sS]$/.test(k)) { e.preventDefault(); resolverSiNo("si"); }
       else if (/^[nN]$/.test(k)) { e.preventDefault(); resolverSiNo("no"); }
-      // Erre de "repítalo": gemelo por teclado del comando de voz que vuelve
-      // a leer el numero sin borrarlo. Solo tiene sentido en la confirmacion.
-      else if (/^[rR]$/.test(k) && estado === "CONFIRMA_NUMERO") {
-        e.preventDefault();
-        repetirNumero();
-      }
       return;
     }
 
@@ -1125,7 +1164,12 @@
     // Antes esto estaba apagado en movil por completo, para evitar que la
     // frase en cola se soltara encima del mensaje del toque. Fue un exceso:
     // apago tambien Android, donde funcionaba bien.
-    hablar("bienvenida", alTerminarBienvenida);
+    // La bienvenida cede el turno al lector de pantalla antes de sonar. Ver
+    // ESPERA_PRIMERA_FRASE.
+    window.setTimeout(function () {
+      if (yaArranco) { return; }
+      hablar("bienvenida", alTerminarBienvenida);
+    }, ESPERA_PRIMERA_FRASE);
   }
 
   // Arranca y pausa el audio en el acto, para dejarlo desbloqueado. Solo se
@@ -1331,13 +1375,9 @@
     }
 
     if (estado === "CONFIRMA_NUMERO") {
-      if (r === "si") { registrar(); }
-      else {
-        // "No" borra el numero entero. Se dice que se borro y se vuelve a
-        // pedir en la MISMA frase: encadenar dos locuciones dejaria al
-        // usuario varios segundos en silencio sin saber si hablar o esperar.
-        pedirNumero("numeroBorrado");
-      }
+      // Aqui solo se llega por teclado. Por voz manda oirConfirmacion, que
+      // entiende los tres verbos.
+      resolverConfirmacion(r === "si" ? "correcto" : "corregir");
     }
   }
 
@@ -1443,11 +1483,38 @@
   // confirmar registra el numero y borrar lo pierde entero. Ante la duda,
   // conviene equivocarse hacia el lado que no rompe nada.
   function oirConfirmacion(alternativas) {
+    // El orden importa, y es de riesgo y no de gramatica. Volver a escuchar
+    // no cambia nada, corregir borra el numero, y confirmar lo da por bueno y
+    // cierra. Ante una frase ambigua conviene equivocarse hacia el lado que
+    // menos rompe.
     if (algunaCumple(alternativas, PATRON_REPETIR)) {
       repetirNumero();
       return true;
     }
-    return oirSiNo(alternativas);
+    if (algunaCumple(alternativas, PATRON_CORREGIR)) {
+      resolverConfirmacion("corregir");
+      return true;
+    }
+    if (algunaCumple(alternativas, PATRON_CORRECTO)) {
+      resolverConfirmacion("correcto");
+      return true;
+    }
+
+    // Nada encaja: se vuelve a preguntar en vez de adivinar.
+    reintentos++;
+    if (reintentos >= 3) {
+      reintentos = 0;
+      hablar("confirmar", function () { escuchar(oirConfirmacion); },
+             { numero: leerDigitos(digitos) });
+    }
+    return false;
+  }
+
+  function resolverConfirmacion(que) {
+    detenerMicrofono();
+    reintentos = 0;
+    if (que === "correcto") { registrar(); }
+    else { pedirNumero("numeroBorrado"); }
   }
 
   // Vuelve a leer el numero sin tocarlo y sin salir del estado.
@@ -1500,6 +1567,8 @@
   }
 
 
+  var dejoNumero = false;
+
   function registrar() {
     estado = "FIN";
     window.clearTimeout(relojDictado);
@@ -1522,7 +1591,12 @@
       return;
     }
 
-    hablar("registrado", preguntarPdf);
+    dejoNumero = true;
+
+    // Solo un acuse corto. El mensaje completo va en el cierre, que ademas
+    // sabe si acepto el PDF: decirlo aqui y repetirlo al final alargaba el
+    // silencio entre una cosa y otra sin aportar nada.
+    hablar("numeroGuardado", preguntarPdf);
   }
 
   // Antes esto decia adios y acto seguido preguntaba "una ultima cosa", que
@@ -1553,16 +1627,22 @@
     estado = "FIN";
     detenerMicrofono();
 
-    if (conPdf) {
-      // Se descarga antes de hablar: asi ocurre dentro de la misma pulsacion
-      // de tecla cuando la respuesta vino del teclado, y el navegador la trata
-      // como una accion del usuario en vez de bloquearla.
-      descargarPdf();
-      hablar("cierreConPdf");
-      return;
-    }
+    // El cierre reconoce lo que la persona acaba de decidir. No es lo mismo
+    // despedir a quien dejo su numero y se llevo la propuesta que a quien
+    // escucho y prefirio no dejar nada: un unico cierre para los cuatro
+    // caminos sonaba a formulario, no a conversacion.
+    var clave = dejoNumero
+      ? (conPdf ? "cierreNumeroYPdf" : "cierreNumeroSinPdf")
+      : (conPdf ? "cierrePdfSinNumero" : "cierreSinNada");
 
-    hablar("cierreSinPdf");
+    // La descarga va DESPUES de hablar, no antes.
+    //
+    // Bajar el archivo genera una notificacion del sistema, y el lector de
+    // pantalla la anuncia en cuanto aparece. Si eso ocurre mientras el bot
+    // sigue despidiendose, se oyen las dos cosas encimadas: justo lo que se
+    // ha estado evitando en toda la pieza. Ahora el cierre avisa de que la
+    // descarga viene, termina de hablar, y solo entonces baja el archivo.
+    hablar(clave, conPdf ? descargarPdf : null);
   }
 
   /* =====================================================================

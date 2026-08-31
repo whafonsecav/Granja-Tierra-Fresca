@@ -51,15 +51,37 @@
   estructura más profunda de lo estrictamente necesario.
 
   ------------------------------------------------------------------
-  LO QUE NO SE VE, Y ES LO QUE GUÍA AL DESTINATARIO
+  CÓMO SE LEE ESTO CON UN LECTOR DE PANTALLA
   ------------------------------------------------------------------
-  El atributo aria-label reemplaza el texto del enlace para el lector
-  de pantalla, y ahí va la instrucción completa: qué es, cuánto dura,
-  que se escucha en vez de leerse, y que se abre con Enter.
+  Aquí había un aria-label con la instrucción completa, confiando en
+  que reemplazaría al texto visible. No sirvió: el sanitizador de
+  Outlook lo elimina al pegar, así que el lector de pantalla acababa
+  leyendo el contenido crudo del enlace. Y ese contenido tenía una
+  línea de tres rayas de separación en medio, que el lector interpreta
+  como texto y lee, o usa para partir la frase en dos. Por eso se oía
+  entrecortado y sin decir qué hacer.
 
-  Funciona en Outlook Web, Gmail y Apple Mail, que renderizan HTML de
-  verdad. Outlook de escritorio usa el motor de Word e ignora ARIA: por
-  eso el texto visible tiene que bastarse solo.
+  La regla que sale de ahí: en un correo, lo único con lo que se puede
+  contar es el TEXTO VISIBLE. Nada de atributos que expliquen aparte,
+  porque puede que no lleguen.
+
+  Por eso tampoco hay title. Un title también reemplaza al texto para
+  el lector de pantalla, así que el mensaje habría cambiado según
+  sobreviviera o no al pegado: en un sitio se oiría una cosa y en otro
+  otra distinta. Sin él, lo que se lee es siempre lo mismo, porque es
+  lo que está escrito a la vista.
+
+  Así que ahora el enlace dice, de corrido y sin adornos en medio:
+
+      "Grabamos dos minutos pensando en ti. Entra aquí para escucharlo"
+
+  Dos frases seguidas, sin separadores, que se leen como una sola
+  indicación y terminan diciendo qué hacer. El aire entre las dos
+  líneas se consigue con line-height, que es invisible para el lector.
+
+  El texto va escrito en minúsculas y se muestra en versalitas con
+  text-transform. Escribirlo en mayúsculas de verdad haría que algunos
+  lectores lo deletrearan letra por letra.
 
   No se escribe "Enlace" en el texto: el lector de pantalla ya anuncia
   por su cuenta que lo es, y repetirlo suena a tartamudeo.
@@ -105,11 +127,9 @@
           <td bgcolor="#a81f18" align="center"
               style="background-color:#a81f18; border-radius:10px; padding:44px 36px 40px 36px; font-family:Georgia,'Times New Roman',serif; font-size:27px; line-height:38px; color:#ffffff;">
 
-            <a href="https://whafonsecav.github.io/Granja-Tierra-Fresca/"
+<a href="https://whafonsecav.github.io/Granja-Tierra-Fresca/"
                lang="es-CO"
-               aria-label="Grabamos dos minutos pensando en ti. Ábrelo para escucharlo: es un mensaje sonoro, dura dos minutos y no hay nada que leer. Presiona Enter para abrirlo."
-               title="Ábrelo para escucharlo. Dura dos minutos."
-               style="color:#ffffff; text-decoration:none;"><span style="font-family:Georgia,'Times New Roman',serif; font-size:27px; line-height:38px; color:#ffffff; text-decoration:none;">Grabamos dos minutos<br />pensando en ti</span><br /><span style="font-family:Georgia,'Times New Roman',serif; font-size:15px; line-height:64px; color:#d98a84; text-decoration:none; letter-spacing:1px;">&#8212;&#8212;&#8212;</span><br /><span style="font-family:Arial,Helvetica,sans-serif; font-size:13px; line-height:30px; letter-spacing:2.5px; color:#f3c4c0; text-decoration:none;">&Aacute;BRELO AQU&Iacute; PARA ESCUCHARLO</span></a>
+               style="color:#ffffff; text-decoration:none;"><span style="font-family:Georgia,'Times New Roman',serif; font-size:26px; line-height:38px; color:#ffffff; text-decoration:none;">Grabamos dos minutos pensando en ti.</span><br /><span style="font-family:Arial,Helvetica,sans-serif; font-size:14px; line-height:44px; letter-spacing:2px; text-transform:uppercase; color:#f3c4c0; text-decoration:none;">Entra aquí para escucharlo</span></a>
 
           </td>
         </tr>
