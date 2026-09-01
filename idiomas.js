@@ -58,6 +58,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
     puente: "Tenemos un mensaje especial para ti. {aviso} Aquí va.",
     arranca: "A continuación te reproduzco el mensaje que preparamos especialmente para ti.",
     arrancaConAviso: "{aviso} A continuación te reproduzco el mensaje que preparamos especialmente para ti.",
+    pideToqueMic: "Por favor, toca tu pantalla para habilitar el micrófono y continuar.",
     tocaOtraVez: "Por favor, {gesto} otra vez.",
 
     soloTeclado: "No puedo usar el micrófono, así que vamos por el teclado. " +

@@ -1483,6 +1483,7 @@
   // usa dentro del manejador del gesto del usuario.
   function desbloquearAudio() {
     try {
+      audio.muted = true; // Mutear para que no se escuche si Safari tarda en pausarlo
       var p = audio.play();
       if (p && typeof p.then === "function") {
         p.then(function () {
@@ -1539,16 +1540,6 @@
 
     desbloquearAudio();
 
-    // Pedir permisos de microfono por adelantado dentro del gesto del usuario.
-    // Safari bloquea SpeechRecognition si se llama minutos despues sin permiso previo.
-    try {
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ audio: true }).then(function(s) {
-          s.getTracks().forEach(function(t) { t.stop(); });
-        })["catch"](function() {});
-      }
-    } catch (e) {}
-
     if (TTS && !esMovil()) {
       try { TTS.cancel(); } catch (e) {}
     }
@@ -1559,10 +1550,43 @@
     } else if (esMovil()) {
       claveArranque = "bienvenidaMovil";
     }
-    hablarDeInmediato(claveArranque, reproducir);
+    if (TTS && esMovil()) {
+      // Desbloqueo síncrono para iOS, evita que se quede mudo por el setTimeout
+      try {
+        var unlock = new window.SpeechSynthesisUtterance(" ");
+        unlock.volume = 0;
+        TTS.speak(unlock);
+      } catch(e) {}
+    }
+
+    var retraso = esMovil() ? 2000 : 0;
+    window.setTimeout(function() {
+      hablarDeInmediato(claveArranque, reproducir);
+    }, retraso);
   }
 
-  arranque.addEventListener("click", function (e) { e.preventDefault(); comenzar(); });
+  arranque.addEventListener("click", function (e) {
+    e.preventDefault();
+    if (estado === "ESPERA_TOQUE_MIC") {
+      estado = "ESPERA_NUMERO"; // Cambiar temporalmente para que no repita si vuelve a tocar
+      try {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          navigator.mediaDevices.getUserMedia({ audio: true }).then(function(s) {
+            s.getTracks().forEach(function(t) { t.stop(); });
+            preguntarRepetir();
+          })["catch"](function() {
+            preguntarRepetir();
+          });
+        } else {
+          preguntarRepetir();
+        }
+      } catch(err) {
+        preguntarRepetir();
+      }
+      return;
+    }
+    comenzar();
+  });
 
   /* =====================================================================
      ESTADO 2 — Reproduccion
@@ -1574,6 +1598,7 @@
     if (TTS) { TTS.cancel(); }
     
     window.setTimeout(function() {
+      audio.muted = false; // Desmutear para reproducir de verdad
       audio.currentTime = 0;
       var p = audio.play();
       if (p && typeof p["catch"] === "function") {
@@ -1594,7 +1619,16 @@
   // donde el usuario decide si sigue o no, y por eso tiene que saber de
   // entrada a que se esta metiendo.
   audio.addEventListener("ended", function () {
-    window.setTimeout(preguntarRepetir, 500);
+    window.setTimeout(function() {
+      if (esMovil()) {
+        estado = "ESPERA_TOQUE_MIC";
+        arranque.setAttribute("aria-label", frase("es", "pideToqueMic"));
+        arranque.focus();
+        hablar("pideToqueMic");
+      } else {
+        preguntarRepetir();
+      }
+    }, 500);
   });
 
   audio.addEventListener("error", function () {
