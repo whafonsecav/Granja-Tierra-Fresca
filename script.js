@@ -1593,7 +1593,9 @@
   // microfono ya se dio en la bienvenida, antes de tocar la pantalla: alli es
   // donde el usuario decide si sigue o no, y por eso tiene que saber de
   // entrada a que se esta metiendo.
-  audio.addEventListener("ended", function () { preguntarRepetir(); });
+  audio.addEventListener("ended", function () {
+    window.setTimeout(preguntarRepetir, 500);
+  });
 
   audio.addEventListener("error", function () {
     hablar("errorAudio", preguntarContacto);
