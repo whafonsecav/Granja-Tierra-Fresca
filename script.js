@@ -731,7 +731,7 @@
   function nuevaFrase(texto, voz, idioma) {
     var pack = IDIOMAS[idioma || "es"] || IDIOMAS.es || {};
     var f = new window.SpeechSynthesisUtterance(texto);
-    f.lang = pack.lang || "es-CO";
+    f.lang = (voz && voz.lang) ? voz.lang : (pack.lang || "es-CO");
     // Sin voz explicita, el motor elige por su cuenta segun el idioma. Es lo
     // que pasa en Edge, que a veces no ha terminado de enumerar las voces.
     if (voz) { f.voice = voz; }
