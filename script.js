@@ -204,32 +204,25 @@
   function anunciarYa(texto) {
     // Vaciar y volver a escribir obliga a NVDA y a VoiceOver a releer un
     // texto aunque sea identico al anterior.
+    if (!anuncio) return;
     anuncio.textContent = "";
     window.setTimeout(function () { anuncio.textContent = texto; }, 60);
   }
 
-  // Anuncia solo SI LA VOZ DE LA PAGINA NO ALCANZA A DECIRLO.
-  //
-  // Los dos canales dicen lo mismo: la region aria-live la lee el lector de
-  // pantalla del usuario, y la voz sintetica la emite la pagina. Si los dos
-  // funcionan a la vez, alguien ciego oye dos voces superpuestas con medio
-  // segundo de desfase. Es peor que el silencio.
-  //
-  // No hay manera de preguntarle al navegador si hay un lector de pantalla
-  // encendido: esa informacion no se expone, y con razon. Asi que en lugar de
-  // detectarlo se ordenan los canales en el tiempo. Se deja pendiente el
-  // anuncio y se cancela en cuanto el motor de voz avisa que empezo a hablar.
-  // Si nunca empieza, el anuncio sale y el lector de pantalla se hace cargo.
+  // La lógica original intentaba hacer una carrera entre el lector de pantalla
+  // y la voz de la página (TTS) usando un setTimeout. Esto fallaba rotundamente
+  // en iOS y Android porque si la voz de la IA tardaba un par de segundos en
+  // cargar, el timeout expiraba y el lector de pantalla arrancaba, solapándose
+  // con la voz de la IA. 
+  // Ahora, la voz de la IA es el ÚNICO locutor. El lector de pantalla (aria-live)
+  // queda estrictamente reservado como plan de emergencia absoluto (sinTTS).
   function anunciar(texto) {
-    window.clearTimeout(relojAnuncio);
-    relojAnuncio = window.setTimeout(function () {
-      anunciarYa(texto);
-    }, ESPERA_ANUNCIO);
+    // Hacemos nada. Dejamos que la API de SpeechSynthesis hable sola.
   }
 
   // La voz empezo a sonar: el lector de pantalla ya no tiene que repetirlo.
   function callarAnuncio() {
-    window.clearTimeout(relojAnuncio);
+    // Hacemos nada.
   }
 
   /* =====================================================================
@@ -1528,7 +1521,6 @@
       arrancarAlTerminar = true;
       desbloquearAudio();
       mantenerPantallaEncendida();
-      arranque.blur();
       return;
     }
 
@@ -1536,7 +1528,6 @@
     mantenerPantallaEncendida();
 
     arranque.setAttribute("aria-label", "Reproduciendo.");
-    arranque.blur();
 
     desbloquearAudio();
 
@@ -1611,8 +1602,7 @@
           // El gesto no basto o se perdio. Se vuelve a pedir.
           yaArranco = false;
           estado = "ESPERA_GESTO";
-          arranque.setAttribute("aria-label", frase("es", "tocaOtraVez"));
-          arranque.focus();
+          arranque.setAttribute("aria-label", "Continuar"); // Corto para no competir si el usuario explora
           hablar("tocaOtraVez");
         });
       }
@@ -1627,8 +1617,8 @@
     window.setTimeout(function() {
       if (esMovil()) {
         estado = "ESPERA_TOQUE_MIC";
-        arranque.setAttribute("aria-label", frase("es", "pideToqueMic"));
-        arranque.focus();
+        arranque.setAttribute("aria-label", "Continuar"); // Corto para evitar superposición
+        // Eliminamos el .focus() para que VoiceOver/TalkBack no interrumpan a la IA
         hablar("pideToqueMic");
       } else {
         preguntarRepetir();
