@@ -1538,6 +1538,16 @@
 
     desbloquearAudio();
 
+    // Pedir permisos de microfono por adelantado dentro del gesto del usuario.
+    // Safari bloquea SpeechRecognition si se llama minutos despues sin permiso previo.
+    try {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(function(s) {
+          s.getTracks().forEach(function(t) { t.stop(); });
+        })["catch"](function() {});
+      }
+    } catch (e) {}
+
     if (TTS && !esMovil()) {
       try { TTS.cancel(); } catch (e) {}
     }
