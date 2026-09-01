@@ -1467,9 +1467,9 @@
     arranque.focus();
 
     // El usuario solicito auto-arranque independiente del navegador.
-    // En Android/PC funciona. En iOS se omite porque bloquearia la cola
-    // y al hacer TTS.cancel() + TTS.speak() en el mismo gesto, Safari enmudece.
-    if (!esIOS()) {
+    // En PC funciona. En móviles se omite porque bloquearia la cola
+    // y al hacer TTS.cancel() + TTS.speak() en el mismo gesto, Android/iOS enmudecen.
+    if (!esMovil()) {
       window.setTimeout(function () {
         if (yaArranco) { return; }
         bienvenidaLanzada = true;
@@ -1538,7 +1538,7 @@
 
     desbloquearAudio();
 
-    if (TTS && !esIOS()) {
+    if (TTS && !esMovil()) {
       try { TTS.cancel(); } catch (e) {}
     }
 
@@ -1547,7 +1547,6 @@
   }
 
   arranque.addEventListener("click", function (e) { e.preventDefault(); comenzar(); });
-  arranque.addEventListener("touchstart", function (e) { e.preventDefault(); comenzar(); }, { passive: false });
 
   /* =====================================================================
      ESTADO 2 — Reproduccion
