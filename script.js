@@ -1543,11 +1543,9 @@
       try { TTS.cancel(); } catch (e) {}
     }
 
-    var claveArranque = "bienvenida";
-    if (bienvenidaTerminada) {
-      claveArranque = "arranca";
-    } else if (esMovil()) {
-      claveArranque = "bienvenidaMovil";
+    var claveArranque = "puente"; // Mensaje universal: "Tenemos un mensaje especial para ti. Aquí va."
+    if (esMovil()) {
+      claveArranque = "bienvenidaMovil"; // En móviles necesita avisar del micrófono
     }
     if (TTS && esMovil()) {
       // Desbloqueo síncrono para iOS, evita que se quede mudo por el setTimeout
