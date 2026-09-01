@@ -1141,6 +1141,8 @@
     var t = normalizar(texto);
     t = t.replace(/\bventicinco\b/g, "veinticinco");
     t = t.replace(/\bsiente\b/g, "siete");
+    t = t.replace(/\btrecientos\b/g, "trescientos");
+    t = t.replace(/\bdocientos\b/g, "doscientos");
     
     var partes = t.split(" ");
     var salida = [];
@@ -1153,10 +1155,31 @@
       else if (COMPUESTOS.hasOwnProperty(p)) { v = COMPUESTOS[p]; }
       else { continue; }
       
-      if (v.length === 2 && v.endsWith("0") && parseInt(v) >= 30) {
-        if (i + 2 < partes.length && partes[i+1] === "y" && UNIDADES.hasOwnProperty(partes[i+2])) {
-          v = (parseInt(v) + parseInt(UNIDADES[partes[i+2]])).toString();
-          i += 2;
+      var valInt = parseInt(v);
+      
+      // Combinar centenas ("trescientos") con el siguiente número menor a 100 ("once" o "veintitres")
+      if (v.length === 3 && v.endsWith("00") && valInt >= 100 && valInt <= 900) {
+        if (i + 1 < partes.length) {
+          var next = partes[i+1];
+          var nextVal = null;
+          if (/^\d+$/.test(next)) { nextVal = next; }
+          else if (UNIDADES.hasOwnProperty(next)) { nextVal = UNIDADES[next]; }
+          else if (COMPUESTOS.hasOwnProperty(next)) { nextVal = COMPUESTOS[next]; }
+          
+          if (nextVal !== null && parseInt(nextVal) < 100) {
+            v = (valInt + parseInt(nextVal)).toString();
+            i++;
+          }
+        }
+      }
+      // Combinar decenas ("treinta") con "y" y unidades ("siete")
+      else if (v.length === 2 && v.endsWith("0") && valInt >= 30) {
+        if (i + 2 < partes.length && partes[i+1] === "y") {
+          var nextUnit = partes[i+2];
+          if (UNIDADES.hasOwnProperty(nextUnit)) {
+            v = (valInt + parseInt(UNIDADES[nextUnit])).toString();
+            i += 2;
+          }
         }
       }
       
