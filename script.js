@@ -1463,7 +1463,8 @@
   }
 
   function prepararArranque() {
-    arranque.setAttribute("aria-label", frase("es", "etiquetaArranque"));
+    var etiqueta = esMovil() ? "etiquetaArranqueMovil" : "etiquetaArranque";
+    arranque.setAttribute("aria-label", frase("es", etiqueta));
     arranque.focus();
 
     // El usuario solicito auto-arranque independiente del navegador.
@@ -1552,7 +1553,12 @@
       try { TTS.cancel(); } catch (e) {}
     }
 
-    var claveArranque = bienvenidaTerminada ? "arranca" : "bienvenida";
+    var claveArranque = "bienvenida";
+    if (bienvenidaTerminada) {
+      claveArranque = "arranca";
+    } else if (esMovil()) {
+      claveArranque = "bienvenidaMovil";
+    }
     hablarDeInmediato(claveArranque, reproducir);
   }
 
