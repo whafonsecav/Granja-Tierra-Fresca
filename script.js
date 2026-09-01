@@ -866,8 +866,6 @@
       arranco = true;
       algunaVozSono = true;
       callarAnuncio();
-      var instruccion = document.getElementById("instruccion-visual");
-      if (instruccion) { instruccion.classList.remove("visible"); }
     }
 
     // Los trozos se hablan de a uno, nunca varios encolados de una vez.
@@ -1014,8 +1012,6 @@
       arranco = true;
       algunaVozSono = true;
       callarAnuncio();
-      var instruccion = document.getElementById("instruccion-visual");
-      if (instruccion) { instruccion.classList.remove("visible"); }
     }
 
     // Un vigia por trozo, no uno solo para toda la frase. Ver la nota
@@ -1465,11 +1461,6 @@
   function prepararArranque() {
     arranque.setAttribute("aria-label", frase("es", "etiquetaArranque"));
     arranque.focus();
-    var instruccion = document.getElementById("instruccion-visual");
-    if (instruccion) {
-      instruccion.textContent = esMovil() ? "Toca la pantalla para empezar" : "Oprime cualquier tecla o haz clic para empezar";
-      instruccion.classList.add("visible");
-    }
 
     // El usuario solicito auto-arranque independiente del navegador.
     // Aunque Safari lo bloqueara, se lanza la peticion.
@@ -1529,13 +1520,8 @@
       desbloquearAudio();
       mantenerPantallaEncendida();
       arranque.blur();
-      var instruccion = document.getElementById("instruccion-visual");
-      if (instruccion) { instruccion.classList.remove("visible"); }
       return;
     }
-
-    var instruccion = document.getElementById("instruccion-visual");
-    if (instruccion) { instruccion.classList.remove("visible"); }
 
     despertarSalida();
     mantenerPantallaEncendida();
