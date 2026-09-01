@@ -209,20 +209,24 @@
     window.setTimeout(function () { anuncio.textContent = texto; }, 60);
   }
 
-  // La lógica original intentaba hacer una carrera entre el lector de pantalla
-  // y la voz de la página (TTS) usando un setTimeout. Esto fallaba rotundamente
-  // en iOS y Android porque si la voz de la IA tardaba un par de segundos en
-  // cargar, el timeout expiraba y el lector de pantalla arrancaba, solapándose
-  // con la voz de la IA. 
-  // Ahora, la voz de la IA es el ÚNICO locutor. El lector de pantalla (aria-live)
-  // queda estrictamente reservado como plan de emergencia absoluto (sinTTS).
+  // En móviles, desactivamos el anuncio por aria-live porque VoiceOver/TalkBack
+  // se solapan con la voz de la página si esta tarda en cargar.
+  // En Desktop, lo mantenemos activado porque navegadores como Chrome/Edge
+  // bloquean el auto-arranque de la voz IA si el usuario no ha interactuado
+  // (autoplay policies), y este anuncio sirve de plan de contingencia para que
+  // el lector de pantalla de PC (NVDA/JAWS) lea el contenido y no parezca roto.
   function anunciar(texto) {
-    // Hacemos nada. Dejamos que la API de SpeechSynthesis hable sola.
+    if (esMovil()) return;
+    window.clearTimeout(relojAnuncio);
+    relojAnuncio = window.setTimeout(function () {
+      anunciarYa(texto);
+    }, ESPERA_ANUNCIO);
   }
 
   // La voz empezo a sonar: el lector de pantalla ya no tiene que repetirlo.
   function callarAnuncio() {
-    // Hacemos nada.
+    if (esMovil()) return;
+    window.clearTimeout(relojAnuncio);
   }
 
   /* =====================================================================
