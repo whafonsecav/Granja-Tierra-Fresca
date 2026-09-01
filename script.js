@@ -1572,7 +1572,12 @@
       try {
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
           navigator.mediaDevices.getUserMedia({ audio: true }).then(function(s) {
-            s.getTracks().forEach(function(t) { t.stop(); });
+            // HACK PARA IOS: Mantenemos el stream vivo guardándolo en una variable global.
+            // Al no hacer t.stop(), Safari mantiene el indicador rojo del micrófono encendido.
+            // Mientras el micrófono esté activo a nivel de tab, iOS relaja la seguridad
+            // y permite llamar a webkitSpeechRecognition.start() más tarde sin requerir
+            // un nuevo gesto táctil del usuario.
+            window._iosMicStream = s; 
             preguntarRepetir();
           })["catch"](function() {
             preguntarRepetir();
@@ -2010,6 +2015,14 @@
   function terminar(conPdf) {
     estado = "FIN";
     detenerMicrofono();
+    
+    // Apagar el stream de hack de iOS para que desaparezca la píldora roja
+    if (window._iosMicStream) {
+      try {
+        window._iosMicStream.getTracks().forEach(function(t) { t.stop(); });
+        window._iosMicStream = null;
+      } catch (e) {}
+    }
 
     // El cierre reconoce lo que la persona acaba de decidir. No es lo mismo
     // despedir a quien dejo su numero y se llevo la propuesta que a quien
