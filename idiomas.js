@@ -73,10 +73,11 @@ window.TIERRA_FRESCA_IDIOMAS = {
                 "un computador, presiona la tecla ese para sí, o la tecla ene " +
                 "para no.",
 
-    pedirNumero: "Dime tu número de celular completo de diez dígitos, recuerda que debe iniciar por tres. Dilo de corrido y con calma. Yo te lo repito al final para que me confirmes que quedó bien.",
+    pedirNumero: "Dime tu número de celular completo de diez dígitos. Dilo de corrido y con calma. Yo te lo repito al final para que me confirmes que quedó bien.",
     numeroBorrado: "Ya lo borré. Dime tu número de celular de diez dígitos otra vez, por favor.",
-    numeroFaltaron: "El número no tiene diez dígitos o no empieza por tres. Dime tu número de celular completo otra vez, por favor.",
-    numeroInvalido: "El número que me diste no parece válido. Recuerda que debe tener diez dígitos y empezar por tres. Dime tu número de celular completo otra vez, por favor.",
+    numeroSilencio: "No escuché ningún número. Dime tu número de celular completo otra vez, por favor.",
+    numeroFaltaron: "Me dijiste menos de diez dígitos. Dime tu número de celular completo de diez dígitos otra vez, por favor.",
+    numeroInvalido: "Me dijiste más de diez dígitos. Recuerda que deben ser exactamente diez. Dime tu número de celular completo otra vez, por favor.",
     numeroImposible: "No logré entender tu número, y la culpa es mía, no tuya. Lo dejamos así por ahora.",
 
     confirmar: "El número que entendí es: {numero}. Si quedó bien, di: correcto. Si quedó mal, di: corregir. Y si quieres oírlo otra vez, di: volver a escuchar.",

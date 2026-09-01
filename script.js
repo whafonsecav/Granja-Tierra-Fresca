@@ -1778,7 +1778,7 @@
     window.clearTimeout(relojDictado);
     detenerMicrofono();
     
-    var esValido = (digitos.length === 10 && digitos[0] === '3');
+    var esValido = (digitos.length === 10);
     
     if (!esValido) {
       intentosSinNumero++;
@@ -1788,7 +1788,14 @@
         return;
       }
       
-      var clave = (digitos.length > 0) ? "numeroInvalido" : "numeroFaltaron";
+      var clave;
+      if (digitos.length === 0) {
+        clave = "numeroSilencio";
+      } else if (digitos.length < 10) {
+        clave = "numeroFaltaron";
+      } else {
+        clave = "numeroInvalido";
+      }
       pedirNumero(clave);
       return;
     }
