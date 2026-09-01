@@ -73,6 +73,24 @@ html, body {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;   /* sin destello azul en moviles */
   touch-action: manipulation;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#texto-arranque {
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 500;
+  text-align: center;
+  margin: 0;
+  padding: 1.5rem 2rem;
+  background: rgba(16, 10, 5, 0.7);
+  border-radius: 12px;
+  max-width: 80%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  /* El texto desaparece suavemente al hacer clic */
+  transition: opacity 0.5s ease;
 }
 
 /* Normalmente quitar el indicador de foco es un error grave de accesibilidad.

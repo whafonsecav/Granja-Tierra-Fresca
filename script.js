@@ -1461,19 +1461,19 @@
 
   function prepararArranque() {
     var etiqueta = esMovil() ? "etiquetaArranqueMovil" : "etiquetaArranque";
-    arranque.setAttribute("aria-label", frase("es", etiqueta));
-    arranque.focus();
-
-    // El usuario solicito auto-arranque independiente del navegador.
-    // En PC funciona. En móviles se omite porque bloquearia la cola
-    // y al hacer TTS.cancel() + TTS.speak() en el mismo gesto, Android/iOS enmudecen.
-    if (!esMovil()) {
-      window.setTimeout(function () {
-        if (yaArranco) { return; }
-        bienvenidaLanzada = true;
-        hablar("bienvenida", alTerminarBienvenida);
-      }, ESPERA_PRIMERA_FRASE);
-    }
+    var texto = frase("es", etiqueta);
+    
+    // Asignar el aria-label
+    arranque.setAttribute("aria-label", texto);
+    
+    // Asignar el texto visible en pantalla (para videntes y lectores de pantalla)
+    var elTexto = document.getElementById("texto-arranque");
+    if (elTexto) { elTexto.textContent = texto; }
+    
+    // Ya no intentamos auto-arrancar en Desktop. Los navegadores modernos
+    // bloquean el autoplay, lo que causaba silencios larguísimos y errores.
+    // Ahora, TODAS las plataformas esperan a que el usuario lea la instrucción
+    // visible en pantalla y haga clic para arrancar de forma segura.
   }
 
   // Arranca y pausa el audio en el acto, para dejarlo desbloqueado. Solo se
@@ -1520,6 +1520,10 @@
   function comenzar() {
     if (yaArranco) { return; }
     yaArranco = true;
+
+    // Desvanecer el texto inicial
+    var elTexto = document.getElementById("texto-arranque");
+    if (elTexto) { elTexto.style.opacity = "0"; }
 
     if (algunaVozSono && !bienvenidaTerminada) {
       arrancarAlTerminar = true;

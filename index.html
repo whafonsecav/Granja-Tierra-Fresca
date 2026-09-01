@@ -42,13 +42,12 @@
 <p id="anuncio" class="solo-lectores" role="status" aria-live="polite" aria-atomic="true"></p>
 
 <!--
-  Superficie de arranque. Ocupa la pantalla completa y es transparente.
-  Recibe el foco apenas carga la pagina: eso hace que el lector de
-  pantalla lea su aria-label de inmediato, sin que el usuario tenga que
-  buscar nada. El aria-label lo escribe script.js segun el dispositivo:
-  "toque la pantalla" en celular, "oprima cualquier tecla" en computador.
+  Superficie de arranque. Ocupa la pantalla completa y captura el primer toque.
+  Ahora incluye un texto visible en pantalla para dar la instrucción clara
+  tanto a usuarios videntes como a lectores de pantalla.
 -->
 <div id="arranque" role="button" tabindex="0" aria-label="Cargando.">
+  <p id="texto-arranque">Cargando...</p>
 </div>
 
 <!-- Sin atributo controls: no debe aparecer reproductor en pantalla. -->
