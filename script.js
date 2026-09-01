@@ -140,7 +140,7 @@
   // Silencio tras el cual se da por terminado el dictado del numero, si ya
   // hay digitos suficientes. Es lo que permite decir el celular de corrido
   // sin tener que anunciar que uno termino.
-  var PAUSA_FIN_DICTADO_MS = 4500;
+  var PAUSA_FIN_DICTADO_MS = 7500;
 
   /* =====================================================================
      Elementos y capacidades del navegador
@@ -866,6 +866,8 @@
       arranco = true;
       algunaVozSono = true;
       callarAnuncio();
+      var instruccion = document.getElementById("instruccion-visual");
+      if (instruccion) { instruccion.classList.remove("visible"); }
     }
 
     // Los trozos se hablan de a uno, nunca varios encolados de una vez.
@@ -1012,6 +1014,8 @@
       arranco = true;
       algunaVozSono = true;
       callarAnuncio();
+      var instruccion = document.getElementById("instruccion-visual");
+      if (instruccion) { instruccion.classList.remove("visible"); }
     }
 
     // Un vigia por trozo, no uno solo para toda la frase. Ver la nota
@@ -1134,16 +1138,28 @@
   };
 
   function extraerDigitos(texto) {
-    var partes = normalizar(texto).split(" ");
+    var t = normalizar(texto);
+    t = t.replace(/\bventicinco\b/g, "veinticinco");
+    t = t.replace(/\bsiente\b/g, "siete");
+    
+    var partes = t.split(" ");
     var salida = [];
     var i, j, p, v;
     for (i = 0; i < partes.length; i++) {
       p = partes[i];
-      if (!p || p === "y") { continue; }          // "treinta y uno"
+      if (!p || p === "y") { continue; }
       if (/^\d+$/.test(p)) { v = p; }
       else if (UNIDADES.hasOwnProperty(p)) { v = UNIDADES[p]; }
       else if (COMPUESTOS.hasOwnProperty(p)) { v = COMPUESTOS[p]; }
       else { continue; }
+      
+      if (v.length === 2 && v.endsWith("0") && parseInt(v) >= 30) {
+        if (i + 2 < partes.length && partes[i+1] === "y" && UNIDADES.hasOwnProperty(partes[i+2])) {
+          v = (parseInt(v) + parseInt(UNIDADES[partes[i+2]])).toString();
+          i += 2;
+        }
+      }
+      
       for (j = 0; j < v.length; j++) { salida.push(v.charAt(j)); }
     }
     return salida;
@@ -1431,6 +1447,14 @@
       instruccion.textContent = esMovil() ? "Toca la pantalla para empezar" : "Oprime cualquier tecla o haz clic para empezar";
       instruccion.classList.add("visible");
     }
+
+    // El usuario solicito auto-arranque independiente del navegador.
+    // Aunque Safari lo bloqueara, se lanza la peticion.
+    window.setTimeout(function () {
+      if (yaArranco) { return; }
+      bienvenidaLanzada = true;
+      hablar("bienvenida", alTerminarBienvenida);
+    }, ESPERA_PRIMERA_FRASE);
   }
 
   // Arranca y pausa el audio en el acto, para dejarlo desbloqueado. Solo se
@@ -1477,6 +1501,16 @@
     if (yaArranco) { return; }
     yaArranco = true;
 
+    if (algunaVozSono && !bienvenidaTerminada) {
+      arrancarAlTerminar = true;
+      desbloquearAudio();
+      mantenerPantallaEncendida();
+      arranque.blur();
+      var instruccion = document.getElementById("instruccion-visual");
+      if (instruccion) { instruccion.classList.remove("visible"); }
+      return;
+    }
+
     var instruccion = document.getElementById("instruccion-visual");
     if (instruccion) { instruccion.classList.remove("visible"); }
 
@@ -1492,8 +1526,8 @@
       try { TTS.cancel(); } catch (e) {}
     }
 
-    // Now we speak the bienvenida since it wasn't spoken
-    hablarDeInmediato("bienvenida", reproducir);
+    var claveArranque = bienvenidaTerminada ? "arranca" : "bienvenida";
+    hablarDeInmediato(claveArranque, reproducir);
   }
 
   arranque.addEventListener("click", function (e) { e.preventDefault(); comenzar(); });
