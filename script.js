@@ -1758,7 +1758,7 @@
       // intento fallido que borra lo ya dictado. Ahora, mientras haya digitos
       // de por medio, se le da mas tiempo en silencio -hasta dos veces mas-
       // antes de asumir que de verdad se detuvo.
-      if (digitos.length > 0 && digitos.length < MINIMO_DIGITOS &&
+      if (digitos.length > 0 && digitos.length < DIGITOS_CELULAR &&
           extensionesDictado < 2) {
         extensionesDictado++;
         esperarFinDelDictado();
@@ -1777,16 +1777,19 @@
   function cerrarCaptura() {
     window.clearTimeout(relojDictado);
     detenerMicrofono();
-    if (digitos.length < MINIMO_DIGITOS) {
-      // Tres vueltas sin numero valido -incluido no decir nada- y se deja de
-      // insistir: se sigue con la conversacion en vez de quedarse atascado.
+    
+    var esValido = (digitos.length === 10 && digitos[0] === '3');
+    
+    if (!esValido) {
       intentosSinNumero++;
       if (intentosSinNumero >= 3) {
         intentosSinNumero = 0;
         hablar("numeroImposible", despedirse);
         return;
       }
-      pedirNumero("numeroFaltaron");
+      
+      var clave = (digitos.length > 0) ? "numeroInvalido" : "numeroFaltaron";
+      pedirNumero(clave);
       return;
     }
     intentosSinNumero = 0;
