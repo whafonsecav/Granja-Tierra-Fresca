@@ -175,6 +175,10 @@
   var extensionesDictado = 0;
   var relojDictado     = null;
 
+  function esIOS() {
+    return /iPad|iPhone|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  }
+
   function esMovil() {
     if (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) {
       return true;
@@ -1463,12 +1467,15 @@
     arranque.focus();
 
     // El usuario solicito auto-arranque independiente del navegador.
-    // Aunque Safari lo bloqueara, se lanza la peticion.
-    window.setTimeout(function () {
-      if (yaArranco) { return; }
-      bienvenidaLanzada = true;
-      hablar("bienvenida", alTerminarBienvenida);
-    }, ESPERA_PRIMERA_FRASE);
+    // En Android/PC funciona. En iOS se omite porque bloquearia la cola
+    // y al hacer TTS.cancel() + TTS.speak() en el mismo gesto, Safari enmudece.
+    if (!esIOS()) {
+      window.setTimeout(function () {
+        if (yaArranco) { return; }
+        bienvenidaLanzada = true;
+        hablar("bienvenida", alTerminarBienvenida);
+      }, ESPERA_PRIMERA_FRASE);
+    }
   }
 
   // Arranca y pausa el audio en el acto, para dejarlo desbloqueado. Solo se
@@ -1531,7 +1538,7 @@
 
     desbloquearAudio();
 
-    if (TTS) {
+    if (TTS && !esIOS()) {
       try { TTS.cancel(); } catch (e) {}
     }
 
@@ -1550,20 +1557,21 @@
     estado = "REPRODUCIENDO";
     detenerMicrofono();
     if (TTS) { TTS.cancel(); }
-    audio.currentTime = 0;
-    var p = audio.play();
-    if (p && typeof p["catch"] === "function") {
-      p["catch"](function () {
-        // El gesto no basto o se perdio. Se vuelve a pedir, pero con una
-        // frase corta: repetir la bienvenida entera, que es lo que se hacia
-        // antes, sonaba a que la pagina se hubiera reiniciado sola.
-        yaArranco = false;
-        estado = "ESPERA_GESTO";
-        arranque.setAttribute("aria-label", frase("es", "tocaOtraVez"));
-        arranque.focus();
-        hablar("tocaOtraVez");
-      });
-    }
+    
+    window.setTimeout(function() {
+      audio.currentTime = 0;
+      var p = audio.play();
+      if (p && typeof p["catch"] === "function") {
+        p["catch"](function () {
+          // El gesto no basto o se perdio. Se vuelve a pedir.
+          yaArranco = false;
+          estado = "ESPERA_GESTO";
+          arranque.setAttribute("aria-label", frase("es", "tocaOtraVez"));
+          arranque.focus();
+          hablar("tocaOtraVez");
+        });
+      }
+    }, 150);
   }
 
   // Al terminar el audio entran las preguntas de una vez. El aviso del
