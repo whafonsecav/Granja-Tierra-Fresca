@@ -16,7 +16,7 @@ El proyecto se basa enteramente en Vanilla JavaScript, CSS y HTML sin frameworks
 El sistema espera **estrictamente 10 dígitos**. No hay reglas de prefijo (no se requiere que inicie con 3). Si la persona dicta más o menos dígitos, o se queda callada, la IA responde indicando el error y vuelve a abrir el micrófono de manera autónoma.
 
 ## Compatibilidad
-La web fue ajustada con muchísimas capas de corrección (Polyfills lógicos) para asegurar que la misma base de código corra idénticamente en:
+La web fue ajustada con muchísimas capas de corrección. La interacción inicial (Bienvenida) y la instrucción en pantalla ("Haz clic/Toca para iniciar") se unificaron al 100% para PC y Celulares, asegurando que todos los dispositivos usen la misma dinámica idéntica (el mensaje de "Hemos preparado un mensaje... tu dispositivo solicitará permisos"). (Polyfills lógicos) para asegurar que la misma base de código corra idénticamente en:
 - Chrome/Edge en Windows/Mac.
 - Android Chrome (con o sin TalkBack).
 - iOS Safari (con o sin VoiceOver).
