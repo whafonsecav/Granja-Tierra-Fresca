@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es-CO">
+<head>
+<meta charset="utf-8">
+<title>Banco de pruebas — el vigia por trozo</title>
+<!--
+  TEMPORAL. No se sube al repositorio. Se borra al terminar de comprobar.
+
+  Reproduce la causa exacta encontrada en el video: una red lenta le agrega
+  a CADA trozo de voz un retraso antes de arrancar (simulando el viaje de
+  ida y vuelta de una voz sintetizada en servidor). Con el vigia antiguo
+  -uno solo para toda la frase- ese retraso acumulado corta el ULTIMO trozo
+  a medias. Con el vigia por trozo, cada uno tiene su propio margen y el
+  ultimo llega a sonar completo.
+
+  Tambien reproduce el otro hallazgo: una tableta con pantalla tactil pero
+  SIN "navigator.userAgentData.mobile" en true (lo que reporta Chrome en
+  tabletas Android de verdad) debe seguir detectandose como movil gracias a
+  maxTouchPoints.
+-->
+<script>
+(function () {
+  var reg = { speak: [], start: [], end: [], cortos: [] };
+  window.__reg = reg;
+  var t0 = Date.now();
+  function ms() { return Date.now() - t0; }
+
+  // Retraso de red por trozo, simulando una voz "Google" que se sintetiza en
+  // servidor: 1200 ms de ida y vuelta antes de que el motor arranque a
+  // hablar. En el video real la tableta estaba en una red distinta de la
+  // habitual, que es precisamente cuando este retraso se nota.
+  var RETRASO_DE_RED_MS = 1200;
+
+  var vozFalsa = { name: "Google español", lang: "es-ES", localService: false, "default": true };
+  var motorFalso = {
+    speaking: false, pending: false, paused: false,
+    getVoices: function () { return [vozFalsa]; },
+    addEventListener: function () {}, removeEventListener: function () {},
+    cancel: function () {}, resume: function () {}, pause: function () {},
+    speak: function (u) {
+      var texto = String(u.text);
+      reg.speak.push({ t: ms(), texto: texto.slice(0, 50) });
+      setTimeout(function () {
+        reg.start.push({ t: ms(), texto: texto.slice(0, 40) });
+        if (u.onstart) { u.onstart(); }
+        // Duracion real de la locucion: proporcional al texto, como en la
+        // vida real. Si el vigia dispara ANTES de que pase este tiempo, el
+        // trozo se corto a medias: eso es justo lo que se busca detectar.
+        var dura = 150 + texto.length * 55;
+        setTimeout(function () {
+          reg.end.push({ t: ms(), texto: texto.slice(0, 40), duroCompleto: true });
+          if (u.onend) { u.onend(); }
+        }, dura);
+      }, RETRASO_DE_RED_MS);
+    }
+  };
+  Object.defineProperty(window, "speechSynthesis", { value: motorFalso, configurable: true, writable: true });
+  window.SpeechSynthesisUtterance = function (texto) {
+    this.text = texto; this.lang = ""; this.rate = 1; this.pitch = 1; this.volume = 1;
+    this.voice = null; this.onstart = null; this.onend = null; this.onerror = null;
+  };
+
+  // Tableta Android real: tiene pantalla tactil, pero Client Hints reporta
+  // mobile:false (asi es como Chrome distingue telefono de tableta).
+  Object.defineProperty(navigator, "userAgentData", {
+    value: { mobile: false }, configurable: true
+  });
+  Object.defineProperty(navigator, "maxTouchPoints", { value: 5, configurable: true });
+
+  function RecFalso() {
+    this.onresult = null; this.onerror = null; this.onend = null;
+    window.__ultimoReconocimiento = this;
+  }
+  RecFalso.prototype.start = function () {};
+  RecFalso.prototype.abort = function () {};
+  RecFalso.prototype.stop = function () {};
+  window.SpeechRecognition = RecFalso;
+  window.webkitSpeechRecognition = RecFalso;
+  window.__decir = function (t) {
+    return { resultIndex: 0, results: [Object.assign([{ transcript: t }], { isFinal: true, length: 1 })] };
+  };
+
+  document.addEventListener("DOMContentLoaded", function () {
+    var a = document.getElementById("audio");
+    a.play = function () { return Promise.resolve(); };
+  });
+})();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="tf-version" content="banco" />
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="fondo" aria-hidden="true"></div>
+<div id="velo" aria-hidden="true"></div>
+<p id="anuncio" class="solo-lectores" role="status" aria-live="polite" aria-atomic="true"></p>
+<div id="arranque" role="button" tabindex="0" aria-label="Cargando."></div>
+<audio id="audio" src="audio/experiencia.mp3" preload="none"></audio>
+<a id="descarga" class="solo-lectores" href="docs/Tomate-de-Guiso-Tierra-Fresca.pdf"
+   download="Tomate-de-Guiso-Tierra-Fresca.pdf" tabindex="-1" aria-hidden="true">Propuesta en PDF</a>
+<script src="idiomas.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

@@ -153,6 +153,7 @@
 
   var SR  = window.SpeechRecognition || window.webkitSpeechRecognition;
   var TTS = window.speechSynthesis || null;
+  window._utterances = []; // To prevent garbage collection of utterances
 
   var reconocimiento   = null;
   var queremosEscuchar = false;
@@ -175,6 +176,13 @@
   var relojDictado     = null;
 
   function esMovil() {
+    if (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) {
+      return true;
+    }
+    if (typeof navigator.maxTouchPoints === "number" && navigator.maxTouchPoints > 0) {
+      return true;
+    }
+    if ("ontouchstart" in window) { return true; }
     if (navigator.userAgentData && typeof navigator.userAgentData.mobile === "boolean") {
       return navigator.userAgentData.mobile;
     }
@@ -822,13 +830,35 @@
     var ultimo = trozos.length - 1;
 
     var listo = false;
+    var vigia = null;
     function finalizar() {
       if (listo) { return; }
       listo = true;
+      window.clearTimeout(vigia);
       detenerLatido();
       // Respiro corto: si el microfono abre en el mismo instante en que calla
       // la voz, alcanza a capturar la cola de la propia frase.
       window.setTimeout(seguir, 250);
+    }
+
+    // Un vigia por trozo, no uno solo para toda la frase.
+    //
+    // Antes habia un unico setTimeout armado al principio, con el largo de
+    // la frase COMPLETA. Pero trocear agrega una demora real por trozo -el
+    // motor tarda un poco en arrancar cada locucion nueva, y las voces que
+    // se sintetizan en un servidor ("Google...") de por medio necesitan ida
+    // y vuelta a la red- que la formula de lectura no contaba. Con varios
+    // trozos esos segundos se acumulan, y podian comerse el margen antes de
+    // que el ULTIMO trozo alcanzara a sonar completo: el vigia lo cortaba a
+    // medio decir ("Respond...") y abria el microfono encima, justo lo que
+    // se reporto.
+    //
+    // Ahora cada trozo arma su propio vigia, con margen de sobra para EL
+    // SOLO. El acumulado de los trozos anteriores ya no cuenta en contra
+    // del ultimo.
+    function armarVigia(textoDelTrozo) {
+      window.clearTimeout(vigia);
+      vigia = window.setTimeout(finalizar, tiempoDeLectura(textoDelTrozo) + 6000);
     }
 
     var arranco = false;
@@ -868,14 +898,15 @@
           u.onend = siguiente;
           u.onerror = siguiente;
         }
+        // Red de seguridad por trozo: en algunos Chrome "onend" no dispara
+        // si la pestana pierde el foco. Sin esto el flujo quedaria colgado
+        // para siempre. Se rearma en cada trozo, ver la nota de armarVigia.
+        armarVigia(trozos[idx]);
+        window._utterances.push(u);
         TTS.speak(u);
       }
       siguiente();
     }
-
-    // Red de seguridad: en algunos Chrome "onend" no dispara si la pestana
-    // pierde el foco. Sin esto el flujo quedaria colgado para siempre.
-    window.setTimeout(finalizar, tiempoDeLectura(texto) + 6000);
 
     iniciarLatido();
     try { encolar(voz); } catch (e) { finalizar(); }
@@ -960,6 +991,7 @@
     var listo = false;
     var arranco = false;
     var reintentado = false;
+    var vigia = null;
 
     // cerrar() da la frase por dicha pase lo que pase. finalizar() solo la da
     // por dicha si ya no queda nada por intentar: un error instantaneo no
@@ -968,6 +1000,7 @@
     function cerrar() {
       if (listo) { return; }
       listo = true;
+      window.clearTimeout(vigia);
       window.setTimeout(seguir, 250);
     }
     function finalizar() {
@@ -979,6 +1012,16 @@
       arranco = true;
       algunaVozSono = true;
       callarAnuncio();
+    }
+
+    // Un vigia por trozo, no uno solo para toda la frase. Ver la nota
+    // identica en decirEnVozAlta: trocear agrega una demora real por trozo
+    // que la formula de lectura, pensada para una sola locucion, no cuenta.
+    // Con varios trozos esos segundos se acumulan y podian comerse el margen
+    // antes de que el ULTIMO trozo alcanzara a sonar completo.
+    function armarVigia(textoDelTrozo) {
+      window.clearTimeout(vigia);
+      vigia = window.setTimeout(cerrar, tiempoDeLectura(textoDelTrozo) + 5000);
     }
 
     // Habla los trozos desde el indice indicado, encadenados por "onend":
@@ -994,6 +1037,8 @@
         i++;
         if (idx === ultimo) { u.onend = cerrar; u.onerror = cerrar; }
         else { u.onend = siguiente; u.onerror = siguiente; }
+        armarVigia(trozos[idx]);
+        window._utterances.push(u);
         try { TTS.speak(u); } catch (e) { siguiente(); }
       }
       siguiente();
@@ -1006,38 +1051,10 @@
     };
     primerTrozo.onerror = finalizar;
 
-    // Red dura: si ni el intento ni el reintento dicen nada, el recorrido
-    // sigue igual. Quedarse esperando en silencio seria peor que hablar mal.
-    window.setTimeout(cerrar, tiempoDeLectura(texto) + 5000);
+    armarVigia(trozos[0]);
+    window._utterances.push(primerTrozo);
 
-    try { TTS.speak(primerTrozo); } catch (e) { reintentado = true; finalizar(); }
-
-    // Reintento. Esta es la locucion que desbloquea el motor de voz para toda
-    // la sesion, asi que no basta con lanzarla: hay que comprobar que salio.
-    // Si a los 350 ms no ha empezado a sonar, se limpia la cola, se deja un
-    // respiro para que la limpieza termine, y se vuelve a hablar. Esta vez
-    // sin voz explicita, por si el fallo fue que esa voz no estaba
-    // disponible; el motor elige la que tenga.
-    //
-    // El medio segundo que suma todo esto cabe de sobra dentro del permiso que
-    // deja un toque, que dura varios segundos.
-    window.setTimeout(function () {
-      if (arranco || listo || !TTS) { return; }
-      reintentado = true;
-      try { TTS.cancel(); } catch (e) { /* sin efecto */ }
-      window.setTimeout(function () {
-        if (arranco || listo || !TTS) { return; }
-        try {
-          var otra = armar(null, trozos[0]);
-          otra.onstart = alArrancar;
-          otra.onend = function () {
-            if (ultimo > 0) { hablarDesde(null, 1); } else { finalizar(); }
-          };
-          otra.onerror = finalizar;
-          TTS.speak(otra);
-        } catch (e) { finalizar(); }
-      }, 150);
-    }, 350);
+    try { TTS.speak(primerTrozo); } catch (e) { finalizar(); }
   }
 
 
@@ -1265,11 +1282,14 @@
     tonoTeToca();
 
     queremosEscuchar = true;
-    try {
-      reconocimiento.start();
-    } catch (e) {
-      avisarSoloTeclado();
-    }
+    window.setTimeout(function () {
+      if (!queremosEscuchar || estado === "FIN") return;
+      try {
+        reconocimiento.start();
+      } catch (e) {
+        avisarSoloTeclado();
+      }
+    }, 450);
   }
 
   var yaAvisoTeclado = false;
@@ -1404,40 +1424,13 @@
   }
 
   function prepararArranque() {
-    // La etiqueta es corta a proposito. El lector de pantalla la lee en
-    // cuanto el elemento recibe el foco, sin que se pueda evitar, asi que si
-    // llevara el mensaje completo se solaparia con la voz de la pagina
-    // diciendo lo mismo. La etiqueta identifica el control; el mensaje lo
-    // cuenta la voz, y si la voz esta bloqueada lo recoge la region
-    // aria-live unos segundos despues.
     arranque.setAttribute("aria-label", frase("es", "etiquetaArranque"));
-
-    // El foco es lo que hace que el lector de pantalla lea la instruccion
-    // sola, sin que el usuario tenga que buscar nada en la pagina.
     arranque.focus();
-
-    // Se intenta hablar en TODAS las plataformas, sin preguntar cual es.
-    //
-    // Android Chrome deja hablar sin gesto previo, asi que alli el mensaje
-    // suena solo, que es como debe ser. iOS Safari lo bloquea y la locucion
-    // se queda en cola. De eso se encarga comenzar(): si al tocar la pantalla
-    // resulta que nunca llego a sonar nada, la cancela y la dice en ese
-    // momento. Y si si sono, no la repite.
-    //
-    // Antes esto estaba apagado en movil por completo, para evitar que la
-    // frase en cola se soltara encima del mensaje del toque. Fue un exceso:
-    // apago tambien Android, donde funcionaba bien.
-    // La bienvenida cede el turno al lector de pantalla antes de sonar. Ver
-    // ESPERA_PRIMERA_FRASE.
-    window.setTimeout(function () {
-      if (yaArranco) { return; }
-      // Se anota que la bienvenida entro en la cola del motor de voz. Puede
-      // que suene y puede que el navegador la bloquee, pero encolada esta, y
-      // eso es lo unico que hay que saber para decidir si hace falta
-      // cancelarla cuando el usuario toque la pantalla.
-      bienvenidaLanzada = true;
-      hablar("bienvenida", alTerminarBienvenida);
-    }, ESPERA_PRIMERA_FRASE);
+    var instruccion = document.getElementById("instruccion-visual");
+    if (instruccion) {
+      instruccion.textContent = esMovil() ? "Toca la pantalla para empezar" : "Oprime cualquier tecla o haz clic para empezar";
+      instruccion.classList.add("visible");
+    }
   }
 
   // Arranca y pausa el audio en el acto, para dejarlo desbloqueado. Solo se
@@ -1484,43 +1477,8 @@
     if (yaArranco) { return; }
     yaArranco = true;
 
-    // Si la bienvenida esta sonando, el toque NO la corta: se anota la
-    // intencion y la experiencia arranca sola en cuanto termine de hablar.
-    // El usuario tiene que oir entera la explicacion de lo que viene, y
-    // ademas es donde se le avisa del microfono.
-    //
-    // La condicion mira algunaVozSono, que solo se pone en onstart, o sea
-    // cuando el motor empezo a emitir de verdad. Si la voz estaba bloqueada
-    // nunca sono nada, no hay nada que respetar, y se arranca de inmediato:
-    // esa llamada dentro del gesto es la que desbloquea el motor en iOS.
-    if (algunaVozSono && !bienvenidaTerminada) {
-      arrancarAlTerminar = true;
-      desbloquearAudio();
-      mantenerPantallaEncendida();
-      arranque.blur();
-      return;
-    }
-
-    // Se cancela SIEMPRE lo que haya quedado en cola, sin mirar si llego a
-    // sonar. Antes esto solo se hacia cuando la voz si habia sonado, y era
-    // justo al reves de lo que hacia falta: si no sono es porque el navegador
-    // la bloqueo y la dejo esperando, que es precisamente el caso en el que
-    // hay algo que cancelar. En Edge se soltaban las dos locuciones juntas,
-    // la encolada y la del toque, y el mensaje se oia repetido.
-    //
-    // Pero se cancela SOLO si de verdad quedo algo encolado. Cancelar por
-    // costumbre sale caro: cancel() no vacia la cola en el acto, y la
-    // locucion que se meta inmediatamente despues se va con la basura. Eso
-    // era lo que dejaba mudo al aparato que abria la pagina por primera vez,
-    // que es justo el caso de todo el que reciba el correo.
-    // La condicion es "se encolo Y no llego a terminar". Si termino, la cola
-    // ya esta vacia y cancelar solo sirve para tragarse la locucion que viene
-    // detras. Y si el usuario toca mientras suena, esto no se ejecuta: de eso
-    // se encarga la salida de arriba.
-    var huboQueCancelar = false;
-    if (TTS && bienvenidaLanzada && !bienvenidaTerminada) {
-      try { TTS.cancel(); huboQueCancelar = true; } catch (e) { /* sin efecto */ }
-    }
+    var instruccion = document.getElementById("instruccion-visual");
+    if (instruccion) { instruccion.classList.remove("visible"); }
 
     despertarSalida();
     mantenerPantallaEncendida();
@@ -1528,49 +1486,14 @@
     arranque.setAttribute("aria-label", "Reproduciendo.");
     arranque.blur();
 
-    // Aqui se habla SIEMPRE, sin preguntarse si la bienvenida llego a sonar.
-    //
-    // Es la unica locucion de toda la sesion que sale dentro de un gesto del
-    // usuario, y eso la vuelve imprescindible: iOS Safari solo desbloquea el
-    // motor de voz si la primera llamada a speak() ocurre dentro del gesto.
-    // Sin ella el bot se queda mudo el resto de la sesion, incluidas las
-    // preguntas del final. Saltarsela por creer que ya se habia hablado fue
-    // justo el error que dejo sin voz al iPhone y al Galaxy S24.
-    //
-    // Por eso la frase es corta: "Aqui va". Dicha a todo el mundo no suena a
-    // repeticion ni siquiera para quien acabe de oir la bienvenida completa,
-    // y el aviso del microfono se movio a donde de verdad hace falta, justo
-    // antes de las preguntas.
-    //
-    // El permiso que da un toque dura poco, y aqui primero se habla y solo
-    // despues se reproduce: para cuando llega el turno del audio ese permiso
-    // ya expiro. Se resuelve arrancando y pausando el audio ahora mismo,
-    // todavia dentro del gesto, con lo que el elemento queda desbloqueado.
     desbloquearAudio();
 
-    // Aviso del microfono: la bienvenida es la unica frase que lo explica, y
-    // si quedo bloqueada -el caso normal en un aparato que abre el sitio por
-    // primera vez- nadie lo oyo. Se agrega aqui para ese camino, que es el
-    // que de verdad ocurre casi siempre. Cuando la bienvenida SI se alcanzo
-    // a decir entera, este aviso ya se dio y no hace falta repetirlo: ese
-    // caso pasa por alTerminarBienvenida(), no por aqui.
-    var claveArranque = bienvenidaTerminada ? "arranca" : "arrancaConAviso";
-
-    // El mismo respiro que ya se le dio hoy a los otros dos sitios donde se
-    // cancela y se vuelve a hablar: cancel() no vacia la cola en el acto, y
-    // hablar en el mismo instante perdia la locucion. Como esta es la UNICA
-    // locucion de toda la sesion que corre dentro del gesto del usuario -la
-    // que desbloquea el motor de voz en iOS- perderla no apagaba solo esta
-    // frase: apagaba el bot entero el resto de la sesion. El respiro solo se
-    // mete cuando de verdad hubo algo que cancelar; si no hubo nada que
-    // cancelar, hablar sigue siendo instantaneo, como exige iOS.
-    if (huboQueCancelar) {
-      window.setTimeout(function () {
-        hablarDeInmediato(claveArranque, reproducir);
-      }, 120);
-    } else {
-      hablarDeInmediato(claveArranque, reproducir);
+    if (TTS) {
+      try { TTS.cancel(); } catch (e) {}
     }
+
+    // Now we speak the bienvenida since it wasn't spoken
+    hablarDeInmediato("bienvenida", reproducir);
   }
 
   arranque.addEventListener("click", function (e) { e.preventDefault(); comenzar(); });

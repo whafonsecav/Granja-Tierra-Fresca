@@ -85,6 +85,25 @@ html, body {
   outline: none;
 }
 
+#instruccion-visual {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 1.4rem;
+  font-family: inherit;
+  text-align: center;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+#instruccion-visual.visible {
+  opacity: 1;
+}
+
 /* --- Texto solo para lectores de pantalla --------------------------------
    Invisible a la vista, pero presente en el arbol de accesibilidad. No se
    usa display:none ni visibility:hidden, porque cualquiera de los dos lo

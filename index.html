@@ -48,7 +48,9 @@
   buscar nada. El aria-label lo escribe script.js segun el dispositivo:
   "toque la pantalla" en celular, "oprima cualquier tecla" en computador.
 -->
-<div id="arranque" role="button" tabindex="0" aria-label="Cargando."></div>
+<div id="arranque" role="button" tabindex="0" aria-label="Cargando.">
+  <div id="instruccion-visual" aria-hidden="true"></div>
+</div>
 
 <!-- Sin atributo controls: no debe aparecer reproductor en pantalla. -->
 <audio id="audio" src="audio/experiencia.mp3?v=20260831T2344" preload="auto"></audio>
