@@ -54,7 +54,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
     etiquetaArranque: "Empezar a escuchar el mensaje de la Granja Tierra Fresca.",
     etiquetaArranqueMovil: "Por favor, toca dos veces tu pantalla para iniciar.",
     bienvenida: "Tenemos un mensaje especial para ti. {aviso} Por favor, {gesto} para escuchar este mensaje que tenemos para ti.",
-    bienvenidaMovil: "Hemos preparado un mensaje especial para ti. {aviso} Al finalizar el mensaje, nos gustaría interactuar brevemente contigo, así que tu celular te solicitará permisos para activar tu micrófono. Cuando lo haga, te agradecemos que puedas concederle los permisos. Ahora sí, el mensaje que hemos preparado:",
+    bienvenidaMovil: "Hemos preparado un mensaje especial para ti. {aviso} Al finalizar el mensaje, nos gustaría interactuar brevemente contigo, así que tu dispositivo te solicitará permisos para activar tu micrófono. Cuando lo haga, te agradecemos que puedas concederle los permisos. Ahora sí, el mensaje que hemos preparado:",
     puente: "Tenemos un mensaje especial para ti. {aviso} Aquí va.",
     arranca: "A continuación te reproduzco el mensaje que preparamos especialmente para ti.",
     arrancaConAviso: "{aviso} A continuación te reproduzco el mensaje que preparamos especialmente para ti.",
