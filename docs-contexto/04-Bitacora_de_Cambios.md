@@ -23,3 +23,7 @@ Este documento registra cronológicamente los ajustes y desarrollos críticos real
 ### 5. Parche Samsung y Bug de Cancelación TTS
 - **Problema:** Dispositivos Samsung ignoraban el evento 	ouchstart si se usaba preventDefault(). Además, hacer TTS.cancel() bloqueaba motores en iOS/Samsung de forma irreversible.
 - **Solución:** Se migró al evento click puro y se deshabilitó el TTS.cancel() y el autoplay engañoso en móviles.
+
+### 6. Loop de Micrófono y Caída Grácil (Fallback Sin Micrófono)
+- **Problema:** En Android y PC, el hack de persistencia de iOS (getUserMedia) bloqueaba el motor de reconocimiento (SpeechRecognition), causando que el micrófono no recibiera audio y entrara en un loop infinito de 'no te entendí'. Además, el comportamiento alternativo cuando el micrófono estaba apagado o denegado, pedía a los usuarios usar las teclas del teclado para responder sí/no o dictar números, lo cual era engorroso y confuso.
+- **Solución:** Se limitó estrictamente el uso de getUserMedia a esIOS(). Adicionalmente, se rehizo completamente la lógica de caída (fallback). Si el micrófono falla o no tiene permisos, la IA ahora pide tocar la pantalla (o presionar cualquier tecla) en un lapso de 5 segundos si se desea repetir el audio. Si el usuario no interactúa, se asume un 'no', se despide educadamente y finaliza la experiencia sin pedir el número telefónico (dado que no hay micrófono para dictarlo).

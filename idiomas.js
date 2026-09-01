@@ -61,11 +61,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
     pideToqueMic: "Por favor, toca tu pantalla para habilitar el micrófono y continuar.",
     tocaOtraVez: "Por favor, {gesto} otra vez.",
 
-    soloTeclado: "No puedo usar el micrófono, así que vamos por el teclado. " +
-                 "Presiona la tecla ese para decir sí, y la tecla ene para " +
-                 "decir no. Cuando te pida tu celular, márcalo con las teclas " +
-                 "de números. Y si quieres que te repita el número, presiona " +
-                 "la tecla erre.",
+    soloTeclado: "Parece que no podemos usar tu micrófono. Si quieres escuchar el mensaje otra vez, por favor {gesto} en los próximos 5 segundos. Si no haces nada, entenderemos que no.",
     errorAudio: "No fue posible cargar el audio, y te pido disculpas. De todas " +
                 "formas quisiera saber si quieres contactar a Tierra Fresca.",
 

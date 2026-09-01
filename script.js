@@ -1329,15 +1329,26 @@
   }
 
   var yaAvisoTeclado = false;
+  var timeoutSinMic = null;
+
   function avisarSoloTeclado() {
     if (yaAvisoTeclado) { return; }
-    // El error del microfono llega de forma asincrona y puede aparecer cuando
-    // la conversacion ya termino. Sin esta guarda, el aviso del teclado le
-    // pisaba al usuario el mensaje de cierre, que es el que de verdad
-    // importa: el que le dice que su numero quedo registrado.
     if (estado === "FIN") { return; }
     yaAvisoTeclado = true;
-    hablar("soloTeclado");
+    
+    // Cambiamos el estado para que un clic signifique "reproducir de nuevo"
+    estado = "ESPERA_CLIC_REPETIR";
+    
+    hablarDeInmediato("soloTeclado", function() {
+      // Damos 5 segundos desde que termina de hablar
+      timeoutSinMic = window.setTimeout(function() {
+        if (estado === "ESPERA_CLIC_REPETIR") {
+          // Si pasaron 5 segundos y no tocó, terminamos la experiencia sin pedir número
+          estado = "FIN";
+          hablarDeInmediato("despedida", terminar);
+        }
+      }, 5000);
+    });
   }
 
   /* =====================================================================
@@ -1347,9 +1358,16 @@
   document.addEventListener("keydown", function (e) {
     if (e.ctrlKey || e.altKey || e.metaKey) { return; }
 
-    // Antes de arrancar, CUALQUIER tecla inicia la experiencia.
-    if (estado === "ESPERA_GESTO") {
+    // Antes de arrancar o en fallback sin micrófono, CUALQUIER tecla repite/inicia.
+    if (estado === "ESPERA_GESTO" || estado === "ESPERA_CLIC_REPETIR") {
       e.preventDefault();
+      if (estado === "ESPERA_CLIC_REPETIR") {
+        window.clearTimeout(timeoutSinMic);
+        yaArranco = true; // reset de bandera por si acaso
+        estado = "REPRODUCIENDO";
+        reproducir();
+        return;
+      }
       comenzar();
       return;
     }
@@ -1561,10 +1579,21 @@
 
   arranque.addEventListener("click", function (e) {
     e.preventDefault();
+
+    if (estado === "ESPERA_CLIC_REPETIR") {
+      window.clearTimeout(timeoutSinMic);
+      yaArranco = true;
+      estado = "REPRODUCIENDO";
+      reproducir();
+      return;
+    }
+
     if (estado === "ESPERA_TOQUE_MIC") {
       estado = "ESPERA_NUMERO"; // Cambiar temporalmente para que no repita si vuelve a tocar
       try {
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        // El hack de persistencia de micrófono de iOS bloquea el SpeechRecognition en Chrome (Android/Windows)
+        // porque compiten por el mismo recurso de hardware. Solo debe ejecutarse en iOS.
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia && esIOS()) {
           navigator.mediaDevices.getUserMedia({ audio: true }).then(function(s) {
             // HACK PARA IOS: Mantenemos el stream vivo guardándolo en una variable global.
             // Al no hacer t.stop(), Safari mantiene el indicador rojo del micrófono encendido.
