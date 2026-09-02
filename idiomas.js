@@ -44,7 +44,7 @@ window.TIERRA_FRESCA_IDIOMAS = {
   es: {
     lang: "es-CO",
     saludo: "Hola.",
-    conectores: ["", "", "", ""],
+    conectores: ["Bien.", "Listo.", "Ahora.", "Entonces."],
 
     gestoMovil: "toca la pantalla",
     gestoEscritorio: "oprime cualquier tecla",
