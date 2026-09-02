@@ -27,3 +27,19 @@ Este documento registra cronológicamente los ajustes y desarrollos críticos real
 ### 6. Loop de Micrófono y Caída Grácil (Fallback Sin Micrófono)
 - **Problema:** En Android y PC, el hack de persistencia de iOS (getUserMedia) bloqueaba el motor de reconocimiento (SpeechRecognition), causando que el micrófono no recibiera audio y entrara en un loop infinito de 'no te entendí'. Además, el comportamiento alternativo cuando el micrófono estaba apagado o denegado, pedía a los usuarios usar las teclas del teclado para responder sí/no o dictar números, lo cual era engorroso y confuso.
 - **Solución:** Se limitó estrictamente el uso de getUserMedia a esIOS(). Adicionalmente, se rehizo completamente la lógica de caída (fallback). Si el micrófono falla o no tiene permisos, la IA ahora pide tocar la pantalla (o presionar cualquier tecla) en un lapso de 5 segundos si se desea repetir el audio. Si el usuario no interactúa, se asume un 'no', se despide educadamente y finaliza la experiencia sin pedir el número telefónico (dado que no hay micrófono para dictarlo).
+
+## Ajustes de Sincronización y Voz (Última Sesión)
+
+### 7. Inyección de Favicon Visual
+- **Cambio:** Se integró el recurso gráfico (avicon.png) correspondiente a la campaña del tomate con gafas, inyectándolo en las etiquetas <head> del HTML (el="icon" y el="apple-touch-icon") para mejorar la presentación en pestañas de los navegadores y accesos directos de pantalla de inicio.
+
+### 8. Optimización del Ritmo de Voz (Pacing) entre Actos
+- **Problema:** Había un retraso de más de 1.8 segundos de silencio antinatural entre locuciones seguidas (ej. la transición del final del Acto 3 al arranque del Acto 4).
+- **Solución:** Se ajustó la función decirEnVozAlta para que registrara el Timestamp ultimaVezQueHablo exactamente al *finalizar* la reproducción de la cadena de trozos (mediante el evento de término de la caja TTS), en vez del inicio. Esto le permitió al motor detectar ráfagas de locuciones consecutivas de forma precisa, reduciendo el retraso de hardware forzado de >1.5s a unos ágiles ~400ms.
+
+### 9. Bypass de Corte y Despertador SAPI para Windows
+- **Problema:** En Desktop (Chrome y Edge), el "Audio Fantasma" que había funcionado tan bien en móvil fallaba catastróficamente por dos motivos: Chrome de PC lo cancelaba prematuramente creyendo optimizar colas; y SAPI forzaba su propia sesión de audio.
+- **Solución:** Tras iterar un parche complejo mediante Web Audio API que tampoco venció el aislamiento del SO de Windows, la arquitectura final implementada fue: Bypasear por completo el particionado de sentencias para Edge de Escritorio, e inyectar explícita y transparentemente la cadena "Ok. " (conArranqueDesechable) como palabra de sacrificio nativa de texto. Esto selló definitivamente el hueco que carcomía el inicio de las frases.
+
+### 10. Flujo Completo y Unificado para Rutas Negativas
+- **Cambio:** Se actualizó la máquina de estados en script.js (específicamente la fase PREGUNTA_CONTACTO). Cuando un usuario rechaza dejar su número (respondiendo "No" en el Acto 2), en vez de cerrar o quedarse esperando el dictado del número inútilmente, el flujo salta grácilmente de forma directa al Acto 4 (preguntarPdf()), manteniendo la naturalidad de la conversación.

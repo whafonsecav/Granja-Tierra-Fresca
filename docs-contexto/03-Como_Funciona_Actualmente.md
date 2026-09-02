@@ -20,3 +20,12 @@ La web fue ajustada con muchísimas capas de corrección. La interacción inicial (
 - Chrome/Edge en Windows/Mac.
 - Android Chrome (con o sin TalkBack).
 - iOS Safari (con o sin VoiceOver).
+
+## Flujo Conversacional Estricto (Máquina de Estados)
+La IA sigue actualmente un flujo de 4 Actos en cadena, los cuales están programados en script.js:
+- **Acto 1:** Bienvenida interactiva, solicitud de permisos y reproducción del audio comercial (MP3).
+- **Acto 2:** Pregunta de cierre 1 ("¿Quieres escuchar de nuevo?"). Si es 'sí', retorna al MP3. Si es 'no', avanza a la toma de contacto.
+- **Acto 3:** Confirmación y guardado del número ("Tu número quedó guardado").
+- **Acto 4:** Pregunta de cierre 2 ("¿Quieres descargar el PDF?"). Si es 'sí', invoca una descarga nativa silenciosa. Si es 'no', se despide y finaliza el script.
+
+En caso de que el micrófono falle, no se soliciten permisos o la persona hable sin hardware activo, el sistema omite el Acto 3 (la captura del número de teléfono) cayendo hacia el final grácilmente solicitando un toque en la pantalla, en lugar de solicitar entradas de teclado (lo cual era inviable en móvil).
