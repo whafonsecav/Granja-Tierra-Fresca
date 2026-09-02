@@ -432,6 +432,30 @@
   //
   // Se generan con WebAudio en el momento, sin archivos: asi no dependen de
   // que se descargue nada y suenan igual en cualquier aparato y navegador.
+
+  function despertarAudioHardware() {
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) { return; }
+      if (!contexto) { contexto = new AC(); }
+      if (contexto.state === "suspended") { contexto.resume(); }
+
+      var osc = contexto.createOscillator();
+      var gan = contexto.createGain();
+      osc.type = "sine";
+      osc.frequency.value = 440;
+      // Inaudible, pero suficiente para obligar al SO a abrir el canal de hardware
+      gan.gain.value = 0.0001; 
+      
+      osc.connect(gan);
+      gan.connect(contexto.destination);
+      
+      osc.start(contexto.currentTime);
+      // Mantener el hardware despierto durante 2 segundos para dar tiempo al TTS
+      osc.stop(contexto.currentTime + 2.0);
+    } catch(e) {}
+  }
+
   function tono(frecuencias, duracion, volumen) {
     try {
       var AC = window.AudioContext || window.webkitAudioContext;
@@ -783,6 +807,10 @@
       var seguido = (new Date()).getTime() - ultimaVezQueHablo < 5000;
       var espera = seguido ? 150 : 600;
 
+      // Despierta el canal de audio a nivel hardware (silenciosamente)
+      // durante estos 600ms para evitar que la TTS se coma la primera palabra.
+      if (!seguido) { despertarAudioHardware(); }
+
       window.setTimeout(function () {
         ultimaVezQueHablo = (new Date()).getTime();
         decirEnVozAlta(conArranqueDesechable(dicho, idiomaHablado),
@@ -893,24 +921,8 @@
     }
 
     iniciarLatido();
-    
-    // NUEVO: Dummy de sacrificio inaudible para despertar el hardware de audio.
-    // Absorbe el "Audio Ducking" del OS para que la frase real no se corte al inicio.
-    // SOLO se ejecuta si el OS viene de un silencio (no seguido) para no agregar demoras innecesarias.
-    if (!esSeguido) {
-      var dummy = new window.SpeechSynthesisUtterance("preparando");
-      dummy.volume = 0.001;
-      dummy.rate = 1.5;
-      if (voz) { dummy.voice = voz; }
-      window._utterances.push(dummy);
-      try { TTS.speak(dummy); } catch (e) {}
 
-      window.setTimeout(function() {
-        try { encolar(voz); } catch (e) { finalizar(); }
-      }, 500);
-    } else {
-      try { encolar(voz); } catch (e) { finalizar(); }
-    }
+    try { encolar(voz); } catch (e) { finalizar(); }
 
     // Si a los dos segundos y medio no ha empezado a sonar, se reintenta una
     // vez con una voz instalada en el aparato.
