@@ -798,8 +798,7 @@
       // Entre dos frases seguidas basta con medio segundo. Antes eran 200 ms,
       // y con eso la voz arrancaba encima del tono de cierre, que dura algo
       // mas de cuatro decimas: se oia el principio del pitido y nada mas.
-      var seguido = (new Date()).getTime() - ultimaVezQueHablo < 5000;
-      var espera = seguido ? 550 : SILENCIO_INICIAL_MS;
+      var espera = 1000; // 1 segundo exacto de espera para evitar el Audio Ducking
 
       window.setTimeout(function () {
         ultimaVezQueHablo = (new Date()).getTime();
