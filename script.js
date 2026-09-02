@@ -904,9 +904,13 @@
       if (voz) { dummy.voice = voz; }
       window._utterances.push(dummy);
       try { TTS.speak(dummy); } catch (e) {}
-    }
 
-    try { encolar(voz); } catch (e) { finalizar(); }
+      window.setTimeout(function() {
+        try { encolar(voz); } catch (e) { finalizar(); }
+      }, 500);
+    } else {
+      try { encolar(voz); } catch (e) { finalizar(); }
+    }
 
     // Si a los dos segundos y medio no ha empezado a sonar, se reintenta una
     // vez con una voz instalada en el aparato.
