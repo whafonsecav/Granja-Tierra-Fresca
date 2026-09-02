@@ -633,26 +633,8 @@
   var yaHabloAlguna = false;
 
   function conArranqueDesechable(texto, idioma) {
-    var pack = IDIOMAS[idioma] || IDIOMAS.es || {};
-
-    if (!yaHabloAlguna) {
-      yaHabloAlguna = true;
-      return (pack.saludo || "Hola.") + " " + texto;
-    }
-    // NO hay excepciones. Aqui habia una: si la frase ya empezaba por una
-    // palabra corta seguida de punto, se daba por hecho que esa haria de
-    // sacrificio y no se anadia ninguna.
-    //
-    // Fue un error, y devolvio el recorte que ya estaba resuelto. Muchas de
-    // las frases empiezan asi y esas palabras SIGNIFICAN algo: "Listo, ya lo
-    // tengo", "Borrado. Dime tu numero otra vez". Perder "Borrado" es perder
-    // justo la confirmacion de que se borro. La palabra desechable tiene que
-    // ser una que sobre, no la primera que haya.
-
-    var lista = pack.conectores || ["Bien."];
-    var c = lista[nConector % lista.length];
-    nConector++;
-    return c + " " + texto;
+    yaHabloAlguna = true;
+    return texto;
   }
 
   // Cierto en cuanto el motor de voz EMPIEZA a hablar de verdad, no cuando se
