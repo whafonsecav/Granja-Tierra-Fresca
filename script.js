@@ -657,6 +657,17 @@
   var yaHabloAlguna = false;
 
   function conArranqueDesechable(texto, idioma) {
+    // En móvil el hack de WebAudio/Dummy funciona a nivel de OS.
+    // Pero en Windows, SAPI abre su PROPIA sesión de audio que sufre ducking
+    // sin importar lo que haga el navegador. La única forma de absorberlo
+    // es darle texto real para que mastique mientras se abre el canal.
+    if (!esMovil()) {
+      yaHabloAlguna = true;
+      // Una palabra de sacrificio neutra y corta. En la mayoría de PCs
+      // se la tragará el sistema y el usuario no la escuchará.
+      return "Ok. " + texto;
+    }
+    
     yaHabloAlguna = true;
     return texto;
   }
@@ -710,6 +721,11 @@
   // que en decirEnVozAlta: es lo que evita el corte a los quince segundos
   // de Android sin depender de pause()/resume(), que en movil esta roto.
   function partirEnTrozos(texto) {
+    // Computadores de escritorio (Edge/Chrome en Windows) sufren de cortes y reinicios 
+    // del motor TTS si se les pasan múltiples Utterances cortas. Tienen capacidad 
+    // de sobra para frases largas, así que no las partimos.
+    if (!esMovil()) { return [texto]; }
+    
     var LARGO = 130;
     var partes = texto.match(/[^.!?\u2026]+[.!?\u2026]*\s*/g) || [texto];
     var trozos = [];
