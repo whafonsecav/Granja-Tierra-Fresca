@@ -780,17 +780,18 @@
       // Entre dos frases seguidas basta con medio segundo. Antes eran 200 ms,
       // y con eso la voz arrancaba encima del tono de cierre, que dura algo
       // mas de cuatro decimas: se oia el principio del pitido y nada mas.
-      var espera = 1000; // 1 segundo exacto de espera para evitar el Audio Ducking
+      var seguido = (new Date()).getTime() - ultimaVezQueHablo < 5000;
+      var espera = seguido ? 150 : 600;
 
       window.setTimeout(function () {
         ultimaVezQueHablo = (new Date()).getTime();
         decirEnVozAlta(conArranqueDesechable(dicho, idiomaHablado),
-                       voz, seguir, idiomaHablado);
+                       voz, seguir, idiomaHablado, seguido);
       }, espera);
     });
   }
 
-  function decirEnVozAlta(texto, voz, seguir, idioma) {
+  function decirEnVozAlta(texto, voz, seguir, idioma, esSeguido) {
     // Se habla en trozos cortos, encolados de una vez, y no en una sola
     // locucion larga.
     //
@@ -816,6 +817,7 @@
     function finalizar() {
       if (listo) { return; }
       listo = true;
+      ultimaVezQueHablo = (new Date()).getTime();
       window.clearTimeout(vigia);
       detenerLatido();
       // Respiro corto: si el microfono abre en el mismo instante en que calla
@@ -894,12 +896,15 @@
     
     // NUEVO: Dummy de sacrificio inaudible para despertar el hardware de audio.
     // Absorbe el "Audio Ducking" del OS para que la frase real no se corte al inicio.
-    var dummy = new window.SpeechSynthesisUtterance("preparando");
-    dummy.volume = 0.001;
-    dummy.rate = 1.5;
-    if (voz) { dummy.voice = voz; }
-    window._utterances.push(dummy);
-    try { TTS.speak(dummy); } catch (e) {}
+    // SOLO se ejecuta si el OS viene de un silencio (no seguido) para no agregar demoras innecesarias.
+    if (!esSeguido) {
+      var dummy = new window.SpeechSynthesisUtterance("preparando");
+      dummy.volume = 0.001;
+      dummy.rate = 1.5;
+      if (voz) { dummy.voice = voz; }
+      window._utterances.push(dummy);
+      try { TTS.speak(dummy); } catch (e) {}
+    }
 
     try { encolar(voz); } catch (e) { finalizar(); }
 
