@@ -909,6 +909,16 @@
     }
 
     iniciarLatido();
+    
+    // NUEVO: Dummy de sacrificio inaudible para despertar el hardware de audio.
+    // Absorbe el "Audio Ducking" del OS para que la frase real no se corte al inicio.
+    var dummy = new window.SpeechSynthesisUtterance("preparando");
+    dummy.volume = 0.001;
+    dummy.rate = 1.5;
+    if (voz) { dummy.voice = voz; }
+    window._utterances.push(dummy);
+    try { TTS.speak(dummy); } catch (e) {}
+
     try { encolar(voz); } catch (e) { finalizar(); }
 
     // Si a los dos segundos y medio no ha empezado a sonar, se reintenta una
