@@ -1561,7 +1561,10 @@
       try { TTS.cancel(); } catch (e) {}
     }
 
-    var claveArranque = "bienvenidaMovil"; // Dinámica idéntica universal para todos los dispositivos
+    var claveArranque = "bienvenida"; // Para Laptop/Desktop/PC
+    if (esMovil()) {
+      claveArranque = "bienvenidaMovil"; // Para Celular/Tablet
+    }
     if (TTS && esMovil()) {
       // Desbloqueo síncrono para iOS, evita que se quede mudo por el setTimeout
       try {
@@ -1725,7 +1728,7 @@
 
     if (estado === "PREGUNTA_CONTACTO") {
       if (r === "si") { pedirNumero(); }
-      else { despedirse(); }
+      else { preguntarPdf(); }
       return;
     }
 

@@ -44,63 +44,50 @@ window.TIERRA_FRESCA_IDIOMAS = {
   es: {
     lang: "es-CO",
     saludo: "Hola.",
-    conectores: ["Bien.", "Listo.", "Ahora.", "Entonces."],
+    conectores: ["", "", "", ""],
 
     gestoMovil: "toca la pantalla",
     gestoEscritorio: "oprime cualquier tecla",
-    aviso: "Al final te haré unas preguntas muy breves que podrás responder " +
-           "con tu micrófono. Cuando el navegador te pida permiso, actívalo.",
+    aviso: "",
 
     etiquetaArranque: "Empezar a escuchar el mensaje de la Granja Tierra Fresca.",
     etiquetaArranqueMovil: "Por favor, toca dos veces tu pantalla para iniciar.",
-    bienvenida: "Tenemos un mensaje especial para ti. {aviso} Por favor, {gesto} para escuchar este mensaje que tenemos para ti.",
-    bienvenidaMovil: "Hemos preparado un mensaje especial para ti. {aviso} Al finalizar el mensaje, nos gustaría interactuar brevemente contigo, así que tu dispositivo te solicitará permisos para activar tu micrófono. Cuando lo haga, te agradecemos que puedas concederle los permisos. Ahora sí, el mensaje que hemos preparado:",
-    puente: "Tenemos un mensaje especial para ti. {aviso} Aquí va.",
-    arranca: "A continuación te reproduzco el mensaje que preparamos especialmente para ti.",
-    arrancaConAviso: "{aviso} A continuación te reproduzco el mensaje que preparamos especialmente para ti.",
+    
+    bienvenida: "Hola. Tenemos un mensaje especial para ti. Al final te haré unas preguntas breves y te ofreceré descargar automáticamente nuestra propuesta en PDF. Si te pide permisos de micrófono, acéptalos. Por favor, oprime cualquier tecla para escucharlo.",
+    bienvenidaMovil: "Hola. Tenemos un mensaje especial para ti. Al final te haré unas preguntas breves y te ofreceré descargar automáticamente nuestra propuesta en PDF. Si te pide permisos de micrófono, acéptalos. Ahora sí, aquí va el mensaje:",
+    puente: "Hola. Tenemos un mensaje especial para ti. Al final te haré unas preguntas breves y te ofreceré descargar automáticamente nuestra propuesta en PDF. Si te pide permisos de micrófono, acéptalos. Por favor, oprime cualquier tecla para escucharlo.",
+    arranca: "Hola. Tenemos un mensaje especial para ti. Al final te haré unas preguntas breves y te ofreceré descargar automáticamente nuestra propuesta en PDF. Si te pide permisos de micrófono, acéptalos. Por favor, oprime cualquier tecla para escucharlo.",
+    arrancaConAviso: "Hola. Tenemos un mensaje especial para ti. Al final te haré unas preguntas breves y te ofreceré descargar automáticamente nuestra propuesta en PDF. Si te pide permisos de micrófono, acéptalos. Por favor, oprime cualquier tecla para escucharlo.",
     pideToqueMic: "Por favor, toca tu pantalla para habilitar el micrófono y continuar.",
     tocaOtraVez: "Por favor, {gesto} otra vez.",
 
     soloTeclado: "Parece que no podemos usar tu micrófono. Si quieres escuchar el mensaje otra vez, por favor {gesto} en los próximos 5 segundos. Si no haces nada, entenderemos que no.",
-    errorAudio: "No fue posible cargar el audio, y te pido disculpas. De todas " +
-                "formas quisiera saber si quieres contactar a Tierra Fresca.",
+    errorAudio: "No fue posible cargar el audio, y te pido disculpas. De todas formas quisiera saber si quieres contactar a Tierra Fresca.",
 
-    preguntaRepetir: "¿Quieres escuchar el mensaje otra vez? Responde sí, o no.",
+    preguntaRepetir: "Listo. ¿Quieres escuchar el mensaje otra vez? Responde sí, o no.",
     repitiendo: "Aquí va otra vez.",
     preguntaContacto: "¿Quieres contactar a Tierra Fresca? Responde sí, o no.",
-    noEntiendo: "No logro entenderte, y la culpa es mía, no tuya. Si estás en " +
-                "un computador, presiona la tecla ese para sí, o la tecla ene " +
-                "para no.",
+    noEntiendo: "No logro entenderte. Responde sí o no.",
 
     pedirNumero: "Dime tu número de celular completo de diez dígitos. Dilo de corrido y con calma. Yo te lo repito al final para que me confirmes que quedó bien.",
-    numeroBorrado: "Ya lo borré. Dime tu número de celular de diez dígitos otra vez, por favor.",
+    numeroBorrado: "Ya lo borré. Dime nuevamente tu número de celular de diez dígitos otra vez, por favor.",
     numeroSilencio: "No escuché ningún número. Dime tu número de celular completo otra vez, por favor.",
     numeroFaltaron: "Me dijiste menos de diez dígitos. Dime tu número de celular completo de diez dígitos otra vez, por favor.",
     numeroInvalido: "Me dijiste más de diez dígitos. Recuerda que deben ser exactamente diez. Dime tu número de celular completo otra vez, por favor.",
-    numeroImposible: "No logré entender tu número, y la culpa es mía, no tuya. Lo dejamos así por ahora.",
+    numeroImposible: "No logré entender tu número. Lo dejamos así por ahora.",
 
-    confirmar: "El número que entendí es: {numero}. Si quedó bien, di: correcto. Si quedó mal, di: corregir. Y si quieres oírlo otra vez, di: volver a escuchar.",
-    repetirNumero: "{numero}. ¿Quedó bien? Di: correcto, corregir, o volver a escuchar.",
+    confirmar: "El número de celular que entendí es: {numero}. Si quedó bien, di: correcto. Si quedó mal, di: corregir. Y si quieres oírlo otra vez, di: repetir.",
+    repetirNumero: "{numero}. ¿Quedó bien? Di: correcto, corregir, o repetir",
 
-    whatsapp: "Perfecto. Te voy a abrir WhatsApp con el mensaje ya escrito, " +
-              "para que solo tengas que pulsar enviar.",
-    registrado: "Listo. Tu número ya quedó registrado. Uno de nuestros aliados " +
-                "se va a comunicar contigo para coordinar tu envío.",
-    despedida: "Con mucho gusto. Gracias por darnos un rato de tu tiempo y de " +
-               "tu atención.",
-
-    preguntaPdf: "Una última cosa. ¿Quieres descargar nuestra propuesta? Es un " +
-                 "solo párrafo, de diez líneas, escrito para que tu lector de " +
-                 "pantalla te lo lea de corrido. Responde sí, o no.",
-    cierreNumeroYPdf: "Cuando termine de hablar, la propuesta se descargará sola en tu equipo. Gracias por escucharnos hasta el final. Hasta muy pronto.",
-    cierreNumeroSinPdf: "Sin problema. Gracias por escucharnos hasta el final. Hasta muy pronto.",
-    cierrePdfSinNumero: "Gracias por regalarnos tu tiempo. Cuando termine de hablar, la propuesta se descargará sola en tu equipo, para cuando quieras oírla con calma. Hasta pronto.",
-    cierreSinNada: "Gracias por regalarnos tu tiempo y tu atención. Aquí quedamos, por si algún día quieres volver. Hasta pronto.",
-    numeroGuardado: "Tu número quedó guardado. Uno de nuestros aliados se va a comunicar contigo para coordinar tu envío.",
-    cierreConPdf: "Listo, ya lo tienes en tu carpeta de descargas. Que ese guiso " +
-                  "te quede como en casa. Hasta pronto.",
-    cierreSinPdf: "Perfecto, te lo dejo así. Que ese guiso te quede como en casa. " +
-                  "Hasta pronto."
+    numeroGuardado: "Tu número de celular quedó guardado. Uno de nuestros aliados se va a comunicar contigo para coordinar tu envío.",
+    
+    preguntaPdf: "Una última cosa. ¿Quieres descargar nuestra propuesta? Es un solo párrafo, de diez líneas, escrito para que tu lector de pantalla te lo lea de corrido. Responde sí, o no.",
+    
+    cierreNumeroYPdf: "Perfecto. La propuesta ya se está descargando en tu equipo y te llamaremos muy pronto para coordinar los detalles. ¡Gracias por tu tiempo!",
+    cierreNumeroSinPdf: "Entendido. Ya guardamos tu número, así que te llamaremos muy pronto para conversar directamente. ¡Que tengas un excelente día!",
+    cierrePdfSinNumero: "Claro, la descarga iniciará en un instante. Esperamos que la propuesta te anime a contactarnos más adelante para coordinar tu envío. Aquí estamos para cuando lo requieras.",
+    cierreSinNada: "Todo claro. Gracias por tu tiempo hoy. Si más adelante cambias de opinión y nos requieres, las puertas de Tierra Fresca están abiertas. ¡Hasta pronto!",
+    despedida: "Todo claro. Gracias por tu tiempo hoy. Si más adelante cambias de opinión y nos requieres, las puertas de Tierra Fresca están abiertas. ¡Hasta pronto!"
   },
 
   /* ----------------------------------------------------------------- INGLES
